@@ -1,0 +1,523 @@
+<!--
+  sdlc run-stats report — FIXED TEMPLATE. Read skills/run-stats/schema.md
+  for the data contract this fills from (dispatches[], phase_history, etc.).
+
+  RULES FOR WHOEVER FILLS THIS IN (a command dispatching --show-stats):
+  - Fill in data. Do not redesign layout, reorder sections, rename tokens, or
+    restyle. The whole point of a fixed template is that every report looks the
+    same shape run to run — that is what makes them comparable.
+  - Every {{TOKEN}} is a scalar substitution. Every <!-- BEGIN X --> ... <!-- END X -->
+    block is a repeatable row group: keep the one example row's markup, delete the
+    HTML comments once real rows replace it, and repeat the row markup per item.
+  - Sections whose comment says "omit if empty" should be removed entirely (not
+    left with a "no data" placeholder row) when that data is genuinely absent.
+  - This file is a full standalone document so it can be opened directly in a
+    browser to preview. When actually publishing via the Artifact tool, pass only
+    the contents of <style> plus everything inside <body> — the Artifact tool
+    wraps its own <!doctype>/<html>/<head>/<body>; do not hand it this file's
+    outer shell verbatim.
+  - Model-tier colors are fixed by role, not by story: sonnet = blue, opus =
+    magenta, haiku = yellow, and anything dispatched on a model outside that
+    tiering (a manual override, e.g. to Fable) is "other" = aqua — one shared
+    bucket, never a new hue per override (see schema.md). Status colors
+    (good/warning/serious/critical) are fixed hex, identical in light and dark
+    — never invent new ones for either roster.
+  - Every dispatch names its specific model version in the tag text (e.g.
+    "Opus 4.8"), not just its tier — the tag's COLOR still follows the tier/
+    other role above; only the text changes per dispatch.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{STORY_KEY}} — {{RUN_TYPE}} usage report</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --line: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+    --model-opus: #e87ba4;
+    --model-sonnet: #2a78d6;
+    --model-haiku: #eda100;
+    --model-other: #1baf7a;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-muted: #898781;
+      --line: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --model-opus: #d55181;
+      --model-sonnet: #3987e5;
+      --model-haiku: #c98500;
+      --model-other: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-muted: #898781;
+    --line: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3987e5;
+    --model-opus: #d55181;
+    --model-sonnet: #3987e5;
+    --model-haiku: #c98500;
+    --model-other: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .report {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  h1 {
+    margin: 4px 0 0;
+    font-size: 26px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+  .meta {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .panel > .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .panel-note {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+
+  /* Outcome banner */
+  .banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .pill::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .pill-good     { color: var(--good);     background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .pill-warning  { color: var(--warning);  background: color-mix(in srgb, var(--warning) 18%, transparent); }
+  .pill-serious  { color: var(--serious);  background: color-mix(in srgb, var(--serious) 16%, transparent); }
+  .pill-critical { color: var(--critical); background: color-mix(in srgb, var(--critical) 14%, transparent); }
+  .banner-text { font-size: 14px; color: var(--ink-2); }
+
+  /* Stat tiles */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .tile {
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tile-label {
+    font-size: 11.5px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .tile-value {
+    font-size: 22px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .tile-sub {
+    font-size: 12px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Tables */
+  .table-scroll { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    padding: 0 10px 8px 0;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 8px 10px 8px 0;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.wrap { white-space: normal; }
+  .num { text-align: right; }
+  .tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .tag-opus   { background: var(--model-opus); }
+  .tag-sonnet { background: var(--model-sonnet); }
+  .tag-haiku  { background: var(--model-haiku); color: #2a1c00; }
+  .tag-other  { background: var(--model-other); color: #072a1f; }
+
+  /* Bar charts */
+  .barchart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 84px 1fr 88px; align-items: center; gap: 10px; }
+  .bar-label { font-size: 13px; color: var(--ink-2); }
+  .bar-label-sub { font-size: 11px; color: var(--ink-muted); display: block; }
+  .bar-track {
+    position: relative;
+    height: 10px;
+    border-radius: 5px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .bar-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--pct, 0%);
+    border-radius: 5px;
+    background: var(--bar-color, var(--accent));
+  }
+  .bar-value {
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    text-align: right;
+  }
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 680px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 64px 1fr 72px; }
+  }
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+  details.raw summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    padding: 4px 0;
+  }
+  details.raw pre {
+    margin-top: 10px;
+    padding: 14px;
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 12px;
+    overflow-x: auto;
+    font-variant-numeric: normal;
+  }
+
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bar-fill { transition: width 0.4s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="report">
+
+  <!-- 1. Title bar -->
+  <header>
+    <div class="eyebrow">Usage report · {{RUN_TYPE}}</div>
+    <h1>{{STORY_KEY}} — {{STORY_TITLE}}</h1>
+    <div class="meta">Generated {{GENERATED_AT}} · run started {{STARTED_AT}} · run ended {{ENDED_AT}}</div>
+  </header>
+
+  <!-- 2. Outcome banner. pill class = pill-good | pill-warning | pill-serious | pill-critical
+       matched to the run's final verdict/phase. -->
+  <div class="panel banner">
+    <span class="pill pill-good">{{OUTCOME_LABEL}}</span>
+    <span class="banner-text">{{OUTCOME_SUMMARY}}</span>
+  </div>
+
+  <!-- 3. Stat tiles. Keep exactly these tiles for story-run/design-run; for
+       review-run drop "Design phase" and swap in review-relevant counts
+       (PRs reviewed, cross-findings) — still six tiles, same visual weight. -->
+  <div class="tiles">
+    <div class="tile">
+      <div class="tile-label">Wall clock</div>
+      <div class="tile-value">{{TOTAL_WALL_CLOCK}}</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Dispatches</div>
+      <div class="tile-value">{{TOTAL_DISPATCHES}}</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Tokens</div>
+      <div class="tile-value">{{TOTAL_TOKENS}}</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Design phase</div>
+      <div class="tile-value">{{DESIGN_PHASE_DURATION}}</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Retries / replans</div>
+      <div class="tile-value">{{RETRIES_USED}} / {{REPLANS_USED}}</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Escalations</div>
+      <div class="tile-value">{{ESCALATION_COUNT}}</div>
+    </div>
+  </div>
+
+  <!-- 4. Phase timeline, from phase_history[]. One row per phase entry, in
+       the order they ran. -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Phase timeline</h2>
+      <span class="panel-note">source: phase_history</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Phase</th><th>Started</th><th>Ended</th><th class="num">Duration</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <!-- BEGIN PHASE_ROWS -->
+          <tr>
+            <td>{{PHASE_NAME}}</td>
+            <td>{{PHASE_STARTED}}</td>
+            <td>{{PHASE_ENDED}}</td>
+            <td class="num">{{PHASE_DURATION}}</td>
+            <td>{{PHASE_OUTCOME}}</td>
+          </tr>
+          <!-- END PHASE_ROWS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. Agent dispatch table, from dispatches[]. One row per dispatch, in
+       seq order. `Model` cell uses the tag classes (tag-opus/tag-sonnet/
+       tag-haiku/tag-other for color) with the specific model_version as its
+       text (e.g. "Opus 4.8") — never the bare tier name. -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Agent dispatches</h2>
+      <span class="panel-note">source: dispatches[]</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Phase</th><th>Agent</th><th>Model</th><th class="num">Attempt</th>
+            <th class="num">Duration</th><th class="num">Tokens</th><th class="num">Tool calls</th><th>Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- BEGIN DISPATCH_ROWS -->
+          <tr>
+            <td>{{SEQ}}</td>
+            <td>{{PHASE}}</td>
+            <td>{{AGENT}}</td>
+            <td><span class="tag tag-{{MODEL_SLUG}}">{{MODEL_VERSION}}</span></td>
+            <td class="num">{{ATTEMPT}}</td>
+            <td class="num">{{DURATION}}</td>
+            <td class="num">{{TOKENS}}</td>
+            <td class="num">{{TOOL_USES}}</td>
+            <td>{{OUTCOME}}</td>
+          </tr>
+          <!-- END DISPATCH_ROWS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6 & 7. Model + agent breakdown charts, side by side (stack on narrow
+       viewports). Bar width: set --pct on .bar-fill to each row's share of the
+       max value in its own chart (0-100%). Model chart colors are fixed by
+       role (tag-opus/sonnet/haiku/other hues, see schema.md); agent chart bars
+       all use --accent since agent identity is already carried by the row
+       label. One bar per TIER, not per dispatch — {{MODEL_VERSIONS}} lists the
+       specific version(s) actually used under that tier this run (usually one;
+       more only if the run spanned a model upgrade). The "other" row/legend
+       item exists only when at least one dispatch in this run used a model
+       outside the three known tiers — omit it entirely otherwise, same as any
+       other "omit if empty" section. -->
+  <div class="charts-grid">
+    <section class="panel">
+      <div class="panel-head"><h2>By model</h2></div>
+      <div class="barchart">
+        <!-- BEGIN MODEL_BAR_ROWS -->
+        <div class="bar-row">
+          <span class="bar-label">{{MODEL_NAME}}<span class="bar-label-sub">{{MODEL_VERSIONS}}</span></span>
+          <span class="bar-track"><span class="bar-fill" style="--pct:{{MODEL_PCT}}%; --bar-color:var(--model-{{MODEL_SLUG}});"></span></span>
+          <span class="bar-value">{{MODEL_METRIC}}</span>
+        </div>
+        <!-- END MODEL_BAR_ROWS -->
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--model-opus)"></span>opus</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--model-sonnet)"></span>sonnet</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--model-haiku)"></span>haiku</span>
+        <!-- legend-item for "other" only if any dispatch this run used it:
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--model-other)"></span>other</span>
+        -->
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>By agent</h2></div>
+      <div class="barchart">
+        <!-- BEGIN AGENT_BAR_ROWS -->
+        <div class="bar-row">
+          <span class="bar-label">{{AGENT_NAME}}</span>
+          <span class="bar-track"><span class="bar-fill" style="--pct:{{AGENT_PCT}}%;"></span></span>
+          <span class="bar-value">{{AGENT_METRIC}}</span>
+        </div>
+        <!-- END AGENT_BAR_ROWS -->
+      </div>
+    </section>
+  </div>
+
+  <!-- 8. Escalations & human touchpoints. OMIT THIS ENTIRE SECTION if the run
+       had zero escalations — do not render an empty table. -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Escalations &amp; human touchpoints</h2>
+      <span class="panel-note">source: escalations[]</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Phase</th><th class="wrap">Question</th><th class="wrap">Decision</th><th>Decided at</th></tr>
+        </thead>
+        <tbody>
+          <!-- BEGIN ESCALATION_ROWS -->
+          <tr>
+            <td>{{ESC_PHASE}}</td>
+            <td class="wrap">{{ESC_QUESTION}}</td>
+            <td class="wrap">{{ESC_DECISION}}</td>
+            <td>{{ESC_DECIDED_AT}}</td>
+          </tr>
+          <!-- END ESCALATION_ROWS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 9. Raw data appendix — always present, full JSON dump. -->
+  <details class="raw">
+    <summary>Raw stats JSON</summary>
+    <pre>{{RAW_STATS_JSON}}</pre>
+  </details>
+
+</div>
+</body>
+</html>
