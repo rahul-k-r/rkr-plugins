@@ -1,3 +1,8 @@
+---
+name: tracker-adapter
+description: Resolves which ticket tracker (Jira/Linear/none) and write-mode (normal/incognito) a repo uses, and maps abstract ticket operations onto concrete tool calls. Every command/agent that touches a ticket points here instead of hard-coding a tracker's tool names.
+---
+
 # Skill: tracker-adapter
 
 Every `sdlc` command/agent that touches a ticket does so through this file — never by hard-coding a tracker's tool names. It defines how to **resolve** which tracker a repo uses, the **op table** (abstract operation → concrete tool calls, per tracker), and the **write-mode** split that `--incognito` and `tracker: none` both drive.

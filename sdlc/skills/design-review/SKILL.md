@@ -1,3 +1,8 @@
+---
+name: design-review
+description: Structured design-review protocol (Q1-Q7) for producing or critiquing a story's design note. Loaded by /sdlc:plan-the-design, /sdlc:design-review, and the design-run/story-run design phase.
+---
+
 # Skill: design-review
 
 Run a structured design-review conversation for a story, then produce a

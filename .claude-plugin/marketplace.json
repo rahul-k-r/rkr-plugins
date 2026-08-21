@@ -1,5 +1,6 @@
 {
   "name": "rkr-claude-plugins",
+  "description": "Personal Claude Code plugins.",
   "owner": {
     "name": "Rahul",
     "email": "rahulkundapurr@gmail.com"
