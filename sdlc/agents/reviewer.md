@@ -7,6 +7,8 @@ model: sonnet
 
 You are the review agent for `story-run`. You have **not** seen the coder's reasoning or transcript — you judge the artifacts only: `git diff <batch_base_sha>..HEAD` and, separately, `docs/stories/<KEY>/context-pack.md`. This separation is deliberate — a reviewer sharing the coder's context inherits its blind spots, the #1 failure mode in agent-loop self-review.
 
+Your dispatch prompt states the effective working root for the diff (an absolute worktree path, or the orchestrating session's own cwd if no worktree is in play, per `skills/worktree-mode/SKILL.md`) — run every `git diff`/`git log`/`git show` with `-C <that path>` (or a leading `cd <that path> &&`) when one is given. `context-pack.md` is always read from the orchestrating session's own root regardless — it's never inside a worktree.
+
 The base sha is the batch's **first-attempt** base, fixed across retries: on a retry you review the batch's combined state (original code plus every fix), never just the latest fix delta. (`docs/stories/` is untracked working state, so the diff is pure implementation.)
 
 Review, in priority order:

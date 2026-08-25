@@ -1,6 +1,6 @@
 ---
 description: "Autonomous product-level design audit: build the traceability matrix from spec+TDD+all tickets, sweep every end-to-end flow for gaps, deliberate significant issues through lens panels, verify findings adversarially — then persona-partitioned human review sessions and one bulk-gated publish back to the tracker and the docs."
-argument-hint: "[--depth quick|standard|exhaustive] [--session pm|eng|ux|cross|all] [--publish] [--resume]"
+argument-hint: "[--depth quick|standard|exhaustive] [--effort <tier>] [--session pm|eng|ux|cross|all] [--publish] [--resume]"
 ---
 
 # /sdlc:product-design-review
@@ -30,7 +30,7 @@ INVENTORY → FLOW SWEEP → DELIBERATE → VERIFY+SYNTHESIZE ⇒ SESSIONS (huma
 ## Usage
 
 ```
-/sdlc:product-design-review [--depth quick|standard|exhaustive] [--resume]
+/sdlc:product-design-review [--depth quick|standard|exhaustive] [--effort <tier>] [--resume]
 /sdlc:product-design-review --session pm|eng|ux|cross|all     # run a review session
 /sdlc:product-design-review --publish                          # bulk publish gate + execute
 ```
@@ -39,6 +39,12 @@ INVENTORY → FLOW SWEEP → DELIBERATE → VERIFY+SYNTHESIZE ⇒ SESSIONS (huma
   below BLOCKER; `standard` = all P1/P2 flows + variants, panels on
   BLOCKER/GAP-grade issues; `exhaustive` = every flow × every variant, full
   panel width, second verify pass.
+- `--effort <tier>` — override `.sdlc/config.json`'s `modelEffort` for this
+  run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/
+  `high`/`extra-high`). Omitted → the config's `modelEffort`, or `high` if
+  that's unset too. Only meaningful on the initial autonomous-phase
+  invocation — resolved once at Preflight (Step 0) and read back on
+  `--resume`/`--session`/`--publish`, never re-resolved.
 - `--session <partition>` — open (or resume) that partition's review session.
   Each partition is independently resumable in its own chat by its own human.
 - `--publish` — only valid when session state permits (Step 8).
@@ -78,7 +84,14 @@ without one). Missing archetype: ask once, then record it into `CLAUDE.md`.
    (`.sdlc/config.json`, or detect the registered MCP family and ask); config
    resolved and inputs exist; `docs/product-design-review/<run-id>/` created
    (`run-id` = date + short slug); `run-state.json` initialized (untracked
-   working state, story-run rules). When a tracker is configured, search it
+   working state, story-run rules). **Resolve `model_effort`** per
+   `skills/model-effort/SKILL.md`: `--effort <tier>` if passed, else
+   `.sdlc/config.json`'s `modelEffort`, else `high` — recorded in
+   `run-state.json` and read back (not re-resolved) on `--resume`. Every
+   `surveyor`/`cartographer`/`flow-tracer`/`moderator`/`verifier`/`publisher`/
+   `panelist` dispatch across every phase below passes an explicit `model`
+   argument looked up from that skill's table for this tier — not restated
+   at each dispatch. When a tracker is configured, search it
    for every ticket in the product's project/team scope via the adapter's
    `search` op (Jira: one JQL sweep; Linear: `list_issues` filtered by
    team) — this listing, not per-agent refetching, defines the slices.
@@ -194,6 +207,8 @@ transcript. Autonomous phases resume mid-fan-out (completed dispatches are
 never re-run). Sessions resume mid-docket, per partition, in any chat.
 
 ## Model tiering
+
+The table below is the `high`-tier default — what every agent's own frontmatter already declares, and what a repo with no `modelEffort` configured runs at. For every other tier (`very-low`/`low`/`medium`/`extra-high`), see `skills/model-effort/SKILL.md`'s table — this run resolves `model_effort` once at Preflight (Step 0) and passes an explicit `model` override on every dispatch below looked up from there, superseding the agent file's own default without editing it.
 
 | Agent | Model | Why |
 |-------|-------|-----|

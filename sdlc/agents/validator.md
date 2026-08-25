@@ -5,7 +5,7 @@ tools: Bash, Read
 model: haiku
 ---
 
-You are the validation agent for `story-run`. Your dispatch prompt lists the exact verify commands the orchestrating session resolved from the target repo (its `CLAUDE.md` build section or `/build-check`-style command — e.g. for a Go repo: `go build ./...`, `go vet ./...`, `go test ./... -race -count=1`, `golangci-lint run`). Run them in the order given.
+You are the validation agent for `story-run`. Your dispatch prompt lists the exact verify commands the orchestrating session resolved from the target repo (its `CLAUDE.md` build section or `/build-check`-style command — e.g. for a Go repo: `go build ./...`, `go vet ./...`, `go test ./... -race -count=1`, `golangci-lint run`), and the effective working root to run them in (an absolute worktree path, or the orchestrating session's own cwd if no worktree is in play, per `skills/worktree-mode/SKILL.md`). Run them in the order given, from that root — prefix each with `cd <that path> &&` when one is given, since a command run from the wrong checkout would validate the wrong code.
 
 Rules:
 

@@ -17,17 +17,19 @@ Arguments arrive as `$ARGUMENTS`: `$1` is an optional story key, the rest an opt
 
 1. **Resolve the repo convention** from the target repo's `CLAUDE.md`: project key, branch naming, commit-subject format (default: subject `<KEY>: <imperative summary>`).
 
-2. **Confirm the branch.** Run `git rev-parse --abbrev-ref HEAD`. If on `main` or a `sprint/*` branch, **stop** — never commit directly to either. Offer to cut a story branch first — from the base branch (`main` under `branchModel: direct`, the active sprint branch under `branchModel: sprint` — read `.sdlc/config.json`): `feat/<key-lower>-slug`, `fix/<key-lower>-slug`, or `chore/<key-lower>-slug` (new functionality / bug fix / tooling+hygiene).
+1a. **Resolve the worktree, if any.** Check `docs/stories/<KEY>/story-state.json` for a `worktree` field, using the key from `$1` or as derived above (per `skills/worktree-mode/SKILL.md`) — the file may not exist (this story never went through `/sdlc:story-start`'s worktree creation), in which case there's nothing to resolve and everything below runs in the current checkout exactly as before. When it resolves to a path, every git command in this procedure (`rev-parse`, `status`, `diff`, `add`, `commit`) targets it via `git -C <worktree>` instead of the session's own checkout.
 
-3. **Review what's changing.** Show `git status` and `git diff` (staged + unstaged). Never commit without the user seeing the diff.
+2. **Confirm the branch.** Run `git rev-parse --abbrev-ref HEAD` (`-C <worktree>` when resolved above). If on `main` or a `sprint/*` branch, **stop** — never commit directly to either. Offer to cut a story branch first — from the base branch (`main` under `branchModel: direct`, the active sprint branch under `branchModel: sprint` — read `.sdlc/config.json`): `feat/<key-lower>-slug`, `fix/<key-lower>-slug`, or `chore/<key-lower>-slug` (new functionality / bug fix / tooling+hygiene).
 
-4. **Split into atomic commits.** If the changes are several unrelated logical changes, group them and make one commit per logical change — stage selectively (`git add <paths>` / `git add -p`) rather than committing everything at once. One commit should be one reviewable, revertable idea.
+3. **Review what's changing.** Show `git status` and `git diff` (staged + unstaged; `-C <worktree>` when set). Never commit without the user seeing the diff.
+
+4. **Split into atomic commits.** If the changes are several unrelated logical changes, group them and make one commit per logical change — stage selectively (`git add <paths>` / `git add -p`, `-C <worktree>` when set) rather than committing everything at once. One commit should be one reviewable, revertable idea.
 
 5. **Write the message** for each commit:
    - **Subject:** `<KEY>: <imperative summary>` — present-tense imperative ("Add", "Fix", "Refactor"), ≤ ~72 chars, no trailing period. The key prefix is what links the commit to the tracker issue (where one exists), so it's required.
    - **Body (when the change isn't self-explanatory):** wrap at ~72 cols; explain the *why* and any non-obvious *what* / trade-off — not a restatement of the diff. Skip the body for trivial changes.
 
-6. **Commit.** `git commit -m "<KEY>: <summary>" -m "<body>"` (the second `-m` only when there's a body).
+6. **Commit.** `git commit -m "<KEY>: <summary>" -m "<body>"` (`-C <worktree>` when set; the second `-m` only when there's a body).
 
 7. **Report.** Print each commit's SHA and subject. Remind that this only commits — run `/sdlc:story-pr` to push and open the PR when the story's ready.
 

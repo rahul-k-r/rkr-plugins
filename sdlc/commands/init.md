@@ -22,17 +22,19 @@ argument-hint: "(no arguments)"
 
 5. **Resolve and persist `.sdlc/config.json`.** If it already exists, print its current values and skip straight to step 6 — this step never overwrites an existing config; use a plain edit (or delete the file) to change it later.
 
-   Otherwise, ask two questions (see `skills/tracker-adapter/SKILL.md` for the full resolution logic behind the first one):
+   Otherwise, ask three questions (see `skills/tracker-adapter/SKILL.md` and `skills/model-effort/SKILL.md` for the full resolution logic behind the first and third):
 
    - **Tracker**: try auto-detection first (which MCP tool family — Jira or Linear — is registered this session). Exactly one found → confirm it with the developer rather than asking cold. Both or neither found → ask outright, offering `jira` / `linear` / `none` (`none` is a real, fully-supported answer — not a fallback to apologize for). If `jira`, also ask for the project key; Linear's team prefix is read off issue keys directly and doesn't need to be asked separately.
    - **Branch model**: does this repo use sprint branches with a teammate-approved sprint→main merge, or does it merge story PRs straight to `main`, self-approved? Offer `sprint` / `direct`, defaulting the suggestion to `direct` if the repo has no `sprint/*` branches on `origin` (a real signal, not a guess) and to `sprint` if it does.
+   - **Model effort** (optional, default `high`): does this repo want every subagent at its full default model tier (`high` — the plugin's shipped behavior, safe to just accept), or a different baseline — cheaper/faster (`low`, `very-low`), a mixed step-down that still protects the highest-risk roles (`medium`), or maximum quality regardless of cost (`extra-high`)? Point at `skills/model-effort/SKILL.md`'s table rather than re-explaining it here. Skip asking if the developer doesn't care — default to `high` silently.
 
    Write `.sdlc/config.json`:
    ```json
    {
      "tracker": "jira|linear|none",
      "trackerProjectKey": "<Jira project key, or null>",
-     "branchModel": "sprint|direct"
+     "branchModel": "sprint|direct",
+     "modelEffort": "very-low|low|medium|high|extra-high"
    }
    ```
 

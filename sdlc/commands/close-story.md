@@ -13,6 +13,8 @@ Arguments arrive as `$ARGUMENTS`: `$1` is the story key — a real tracker key, 
 
 **Write-mode.** Resolve per `skills/tracker-adapter/SKILL.md`: a local key, or `tracker: none`, means `write_mode: incognito` — every write below (the completion record, the Done transition, the design-note pointer) redirects to `docs/stories/<KEY>/provenance.md` instead of the tracker. The same applies if this story was run under `--incognito` (check `docs/stories/<KEY>/story-state.json` for `write_mode`/`local_key` if present). Reads (fetching the issue) still happen normally whenever a real tracker key exists.
 
+**Worktree.** Check the same `docs/stories/<KEY>/story-state.json` (if present) for a `worktree` field, per `skills/worktree-mode/SKILL.md` — it may be absent (no state file, or this story never went through `/sdlc:story-start`'s worktree creation), in which case everything below runs in the current checkout as before. When it resolves to a path, every git operation below (confirming the merge in Step 3, gathering the change set in Step 5) targets it via `git -C <worktree>`, `gh` commands via a `cd <worktree> &&` prefix, and the design note in Step 4 is read from there too — that's where the story's branch, and its design-note commit, actually live.
+
 ## Output style (`--technical`)
 
 `--technical` (anywhere in `$ARGUMENTS`) keeps chat output in the engineer-level voice. Without it (the default), everything explained to the developer — why closing is or isn't allowed, what a gap means, and the unblocked-tickets report — follows `skills/plain-language/STANDARD.md`. The completion record — posted to the tracker, or appended to `provenance.md` under incognito — keeps its exact template and verbatim evidence in both modes.
@@ -26,13 +28,13 @@ Arguments arrive as `$ARGUMENTS`: `$1` is the story key — a real tracker key, 
    - **Otherwise run** the story-check author-mode audit now.
    - If the verdict — reused or fresh — **isn't READY, stop, report the gaps, and do not transition.**
 
-3. **Confirm the PR is merged and capture the evidence — always fresh.** story-check only checks the PR is *mergeable*; closing requires it *merged*, so verify this independently every time. Locate the PR for the story's branch (`gh pr view` / `gh pr list --head <branch>`):
+3. **Confirm the PR is merged and capture the evidence — always fresh.** story-check only checks the PR is *mergeable*; closing requires it *merged*, so verify this independently every time. Locate the PR for the story's branch (`gh pr view` / `gh pr list --head <branch>`, `cd <worktree> &&` prefix when set):
    - **No PR, or not yet merged:** **stop — do not transition to Done.** Report the exact missing step (open the PR / wait for green CI / merge). Never fabricate CI results to close a story.
    - **Merged with required checks green:** capture the run URL, per-job conclusions, the feature commit SHA, the PR number/URL, and the merge commit SHA for the completion record. If a check is red, record it with the verbatim error and decide explicitly (fix now vs. linked follow-up) — never paper over a failure.
 
-4. **Check design note §7.** Read `docs/design-notes/$1.md` §7 (Implementation Findings). If it is empty or still contains the template placeholder, warn: "§7 not filled — append implementation findings or confirm no material deviations."
+4. **Check design note §7.** Read `docs/design-notes/$1.md` §7 (Implementation Findings) — from `worktree` when set. If it is empty or still contains the template placeholder, warn: "§7 not filled — append implementation findings or confirm no material deviations."
 
-5. **Gather the change set.** `git diff --name-only` against the merge base to list created/edited/deleted files.
+5. **Gather the change set.** `git diff --name-only` against the merge base to list created/edited/deleted files (`-C <worktree>` when set).
 
 6. **Post the completion record**, filled with the real evidence gathered above. **`write_mode: normal`:** post it via the tracker-adapter's `add_comment` op. **`write_mode: incognito`:** append the same content as a new dated `COMPLETION_RECORD` entry to `docs/stories/<KEY>/provenance.md` instead (create the file with a one-line header if it doesn't exist yet) — never call a tracker write tool in this mode, regardless of what's registered.
 

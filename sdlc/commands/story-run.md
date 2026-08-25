@@ -1,6 +1,6 @@
 ---
 description: "Autonomous full-lifecycle story execution: design (architect-reviewed), plan, implement batch-by-batch, final review, and open the PR — escalating to the human only where judgment genuinely requires it."
-argument-hint: "[<KEY>] [--base <branch>] [--max-retries N] [--max-replans N] [--gate <phase,...>] [--no-gate <phase,...>] [--bypass] [--incognito] [--technical] [--show-stats] [--resume]"
+argument-hint: "[<KEY>] [--base <branch>] [--worktree <path> | --no-worktree] [--effort <tier>] [--max-retries N] [--max-replans N] [--gate <phase,...>] [--no-gate <phase,...>] [--bypass] [--incognito] [--technical] [--show-stats] [--resume]"
 ---
 
 # /sdlc:story-run
@@ -36,7 +36,7 @@ This matters most *early*: before INTAKE there is no context pack and no plan, s
 ## Usage
 
 ```
-/sdlc:story-run [<KEY>] [--base <branch>] [--max-retries N] [--max-replans N] [--gate <phase,...>] [--no-gate <phase,...>] [--bypass] [--incognito] [--technical] [--show-stats] [--resume]
+/sdlc:story-run [<KEY>] [--base <branch>] [--worktree <path> | --no-worktree] [--effort <tier>] [--max-retries N] [--max-replans N] [--gate <phase,...>] [--no-gate <phase,...>] [--bypass] [--incognito] [--technical] [--show-stats] [--resume]
 ```
 
 Arguments arrive as `$ARGUMENTS`; positionally, `$1` is the story key. Examples:
@@ -47,6 +47,9 @@ Arguments arrive as `$ARGUMENTS`; positionally, `$1` is the story key. Examples:
 /sdlc:story-run AGL-42 --gate plan,replans
 /sdlc:story-run AGL-42 --no-gate design
 /sdlc:story-run AGL-42 --bypass --show-stats
+/sdlc:story-run AGL-42 --no-worktree
+/sdlc:story-run AGL-42 --worktree .claude/worktrees/agl-42-slug
+/sdlc:story-run AGL-42 --effort low
 /sdlc:story-run add-dark-mode --incognito
 /sdlc:story-run --incognito
 /sdlc:story-run AGL-42 --resume
@@ -54,6 +57,8 @@ Arguments arrive as `$ARGUMENTS`; positionally, `$1` is the story key. Examples:
 
 - **Key resolution.** Resolve the tracker per `skills/tracker-adapter/SKILL.md` first. If a tracker is configured and `$1` looks like it, treat it as a real key (resolved from the tracker — never inferred or guessed; translate legacy ticket IDs first). If it doesn't resolve, or `tracker: none`, or no `$1` was given at all, treat this as a **no-ticket run** — see **`--incognito` and no-ticket runs** below for how the key, AC, and provenance are handled.
 - `--base <branch>` — the branch to cut from and PR into. Under `branchModel: sprint` (from `.sdlc/config.json`), if omitted, auto-detect the highest-numbered `sprint/*` on origin; **if that is ambiguous or absent, ask — never guess a base branch.** Under `branchModel: direct`, the base is `main` unless overridden — no detection needed, nothing to disambiguate. The resolved base is recorded at branch-cut time and is the PR target.
+- `--worktree <path>` / `--no-worktree` — how the story's git/file work is isolated, per `skills/worktree-mode/SKILL.md`. Default (neither passed): create a fresh `git worktree` at `.claude/worktrees/<key-lower>-slug`. `--worktree <path>` targets an existing one instead of creating it. `--no-worktree` skips worktree isolation entirely, operating directly in the current checkout. Mutually exclusive with each other. This session never calls `EnterWorktree` itself for any of the three — see that skill for why.
+- `--effort <tier>` — override `.sdlc/config.json`'s `modelEffort` for this run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/`high`/`extra-high`). Omitted → the config's `modelEffort`, or `high` if that's unset too.
 - `--max-retries N` — per-batch (and final-review) retry budget before escalation (default `4`, i.e. up to 5 attempts per batch).
 - `--max-replans N` — replan budget for the whole story before escalation (default `2`).
 - `--gate <phase,...>` / `--no-gate <phase,...>` — turn a human gate on/off. Gates and defaults: **`design` on** (approve the finished design note — only reached when the run designs autonomously), **`plan` off** (the `architect`'s PLAN_REVIEW signs off), **`replans` off** (budgeted, architect-reviewed). A cautious run: `--gate plan,replans`; fully hands-off: `--no-gate design`. Inline escalations (locked decisions, panel red lines, budget exhaustion) always happen regardless of gate flags.
@@ -77,6 +82,8 @@ Two situations land here: an explicit `--incognito` on a repo that has *somethin
 
 0. **Preflight.**
    - **Resolve the tracker and write-mode** per `skills/tracker-adapter/SKILL.md`: read `.sdlc/config.json` (or detect the registered MCP family and ask, offering to persist the choice). Resolve `writeMode`: `--incognito` passed → `incognito`; else `tracker: none` → `incognito`; else `normal`. **If both `--incognito` and `--bypass` were passed, stop immediately and say why** — they're incompatible. `tracker: none` is never itself a reason to stop; it just means every write for this run goes local (see **`--incognito` and no-ticket runs**).
+   - **Resolve `model_effort`** per `skills/model-effort/SKILL.md`: `--effort <tier>` if passed, else `.sdlc/config.json`'s `modelEffort`, else `high`. Every subagent dispatch for the rest of this run passes an explicit `model` argument looked up from that skill's table for this tier — not restated at each dispatch below.
+   - **Resolve worktree mode** per `skills/worktree-mode/SKILL.md`: `--worktree <path>` / `--no-worktree` / default (create one). This session never calls `EnterWorktree` for any of the three modes — worktree creation, when it happens, is a plain `git worktree add`, and every git/file operation that needs to reach it does so via path-qualified commands, never a session-level directory change. Resolved here but *applied* in Step 1, once the branch/key are known (the worktree's directory name needs the slug).
    - **Node.js on PATH** — the plugin's hooks (push gate, protected-branch guards, state validation, session announcements) are Node scripts.
    - **`gh` authenticated** — the run ends by opening a PR (unless incognito); check early, not at Step 7.
    - **Resolve project config from the target repo** and hold it for every dispatch:
@@ -93,12 +100,18 @@ Two situations land here: an explicit `--incognito` on a repo that has *somethin
    - *Unassigned* → show the issue summary and ask: **assign it to you and add it to the active sprint/cycle?** On yes, assign the issue and add it (`add_to_cycle`); on no, stop — an unassigned key is the classic typo signature.
    - *Assigned to someone else* → show the summary and current assignee, and require a **second explicit confirmation plus a one-line reason**. On confirm: reassign, and record the reassignment (previous assignee → new assignee, the reason, triggered by story-run) via the tracker's write op — or the provenance file, under incognito — a takeover is never silent. On decline, stop.
 
-   Then resolve the base branch (see `--base`), sync it (`git fetch origin && git switch <base> && git pull --ff-only`), cut or confirm the story branch, record `branch` and `base_branch` in the state file. Transition the issue to In Progress via the tracker's write op — skipped under `writeMode: incognito` (recorded as a provenance entry instead: "would have transitioned `<key>` to In Progress"); skip also if already In Progress (the transition tool's inline `comment` parameter requires ADF — transition without it). If the developer already ran `/sdlc:story-start`, detect it (branch matches, issue In Progress) and skip the setup — but never the assignment check.
+   Then resolve the base branch (see `--base`), sync it (`git fetch origin && git switch <base> && git pull --ff-only`). **Apply worktree mode** (resolved at Step 0, per `skills/worktree-mode/SKILL.md`): default → `git worktree add .claude/worktrees/<key-lower>-slug -b <branch> <base>`; `--worktree <path>` → verify it's a registered worktree (`git worktree list`) on the right branch, use as-is; `--no-worktree` → cut/confirm the branch directly in the current checkout, same as the plugin's original behavior. Record `branch`, `base_branch`, and `worktree` (the absolute path, or `null` under `--no-worktree`) in the state file. **From here on, every git operation and every file this run commits — code, tests, design notes, ADRs — target `worktree` when it's non-null**, via `-C`/`cd`-qualified commands and absolute paths, never by changing this session's own working directory. **`docs/stories/<KEY>/` is the one exception**, always resolving relative to this session's own root regardless of `worktree`, because this session never leaves it and it's never committed to any branch anyway.
+
+   **If `worktree` is non-null and `docs/design-notes/<KEY>.md` (and/or `docs/adr/`) already exist at this session's own root** — the interactive `/sdlc:plan-the-design` case, since that command runs before a branch or worktree necessarily exists — copy them into the worktree's directory now, before anything tries to commit them there. Nothing downstream (Step 2's existence check, `intake`, `close-story`'s §7 check) should ever need to look in two places for the same file; from this point on the worktree's copy is the only one that matters for anything that gets committed.
+
+   Transition the issue to In Progress via the tracker's write op — skipped under `writeMode: incognito` (recorded as a provenance entry instead: "would have transitioned `<key>` to In Progress"); skip also if already In Progress (the transition tool's inline `comment` parameter requires ADF — transition without it). If the developer already ran `/sdlc:story-start`, detect it (branch matches, issue In Progress, `worktree` already resolved the same way) and skip the setup — but never the assignment check.
+
+   **If this session is itself already isolated inside an entered worktree** (the developer used `EnterWorktree` or the VS Code extension's equivalent before invoking this command) — detected by a write to this session's own `docs/stories/` failing with an isolation rejection — don't stop. Redirect all of this run's `docs/stories/<KEY>/` writes to the worktree's own copy instead, note it once in the state file and in the hand-off, and proceed. Recovering it into main is `--resume`'s job the next time this story is resumed from a main-rooted session (see **Resume semantics**), not something this run can do to itself.
 
 2. **DESIGN** (`phase: DESIGN`).
-   - **A design note from an interactive `/sdlc:plan-the-design` session always wins.** If `docs/design-notes/<KEY>.md` exists and passes the substantive checks (§1/§3/§5 filled — same checks as `story-start`), record `design.source: "interactive"` and skip to INTAKE. If it exists but is hollow, stop and tell the developer to finish it — don't silently redesign over a half-deliberated note.
-   - Otherwise, **do what `/sdlc:design-run` does** (it is this phase, standalone — one canonical procedure, defined there): FRAME (designer frames scope + design issues, architect validates the issue list) → DELIBERATE (parallel `panelist` lens panel on high-stakes issues; designer-with-evidence on minor ones) → SYNTHESIZE (consensus rules: convergent → decide with dissents recorded verbatim; split/red-lined on high-stakes, or any locked-decision conflict → escalate to the developer) → DRAFT (full note + ADR scaffolds) → `architect` `DESIGN_REVIEW` (revise budget 2, then escalate) → the **design gate** (on by default; `--no-gate design` skips — inline escalations happened regardless).
-   - On approval: commit the design artifacts yourself — `git add docs/design-notes/<KEY>.md docs/adr && git commit -m "<KEY>: add design note (design-run, architect-approved)"` — and record `design.source: "autonomous"` plus the deliberation and review history in the state file. **The design note and any threshold ADRs must exist, complete and committed, before a line of implementation — no exceptions.**
+   - **A design note from an interactive `/sdlc:plan-the-design` session always wins.** Check `docs/design-notes/<KEY>.md` in `worktree` (already copied there in Step 1 if it existed only at main). If it exists and passes the substantive checks (§1/§3/§5 filled — same checks as `story-start`), record `design.source: "interactive"` and skip to INTAKE. If it exists but is hollow, stop and tell the developer to finish it — don't silently redesign over a half-deliberated note.
+   - Otherwise, **do what `/sdlc:design-run` does** (it is this phase, standalone — one canonical procedure, defined there): FRAME (designer frames scope + design issues, architect validates the issue list) → DELIBERATE (parallel `panelist` lens panel on high-stakes issues; designer-with-evidence on minor ones) → SYNTHESIZE (consensus rules: convergent → decide with dissents recorded verbatim; split/red-lined on high-stakes, or any locked-decision conflict → escalate to the developer) → DRAFT (full note + ADR scaffolds, written directly under `worktree` — the `designer`/`architect`/`panelist` dispatches are told that working root explicitly, same as `coder`'s) → `architect` `DESIGN_REVIEW` (revise budget 2, then escalate) → the **design gate** (on by default; `--no-gate design` skips — inline escalations happened regardless).
+   - On approval: commit the design artifacts yourself — `git -C <worktree> add docs/design-notes/<KEY>.md docs/adr && git -C <worktree> commit -m "<KEY>: add design note (design-run, architect-approved)"` (drop `-C <worktree>` under `--no-worktree`) — and record `design.source: "autonomous"` plus the deliberation and review history in the state file. **The design note and any threshold ADRs must exist, complete and committed, before a line of implementation — no exceptions.**
 
 3. **INTAKE** (`phase: INTAKE`). First ensure `docs/stories/.gitignore` exists containing `*` — everything under `docs/stories/` is **untracked working state**, never committed and never part of the story's diff; provenance lives in the tracker comments the scribe posts (or `provenance.md`, under incognito). Then dispatch `intake` with the story key (or local key + `local_ac`) and project config. It assembles `docs/stories/<KEY>/context-pack.md` read-only. `BLOCKED` (a *referenced* decision/ADR doesn't resolve) → stop and surface exactly what's missing; broken or missing referenced artifacts are never worked around.
 
@@ -134,12 +147,12 @@ Two situations land here: an explicit `--incognito` on a repo that has *somethin
    a. Dispatch `reviewer` with the **whole-story diff** `git diff <base_branch>..HEAD`, the context pack, and the design note, framed as a final story-level review: every acceptance criterion demonstrably implemented *and* tested, design conformance across batch boundaries, cross-batch interactions no single batch review could see.
    b. Dispatch `validator` with the full gate.
    c. Dispatch `assessor` with the results. **RETRY** → `coder` fixes (budget: `max_retries` for this phase, then escalate), then re-run (a)–(c). **ESCALATE** → as in Step 5g. **PROCEED** →
-   d. **Fill design note §7 (Implementation Findings):** append material deviations, discoveries, and assumptions made during the run — sourced from `batch_results` and coder summaries — or "no material deviations." Commit it. (`/sdlc:close-story` checks §7; an autonomous run doesn't get to skip the artifact obligations a human run has.)
+   d. **Fill design note §7 (Implementation Findings):** append material deviations, discoveries, and assumptions made during the run — sourced from `batch_results` and coder summaries — or "no material deviations." Commit it (`-C <worktree>` when set). (`/sdlc:close-story` checks §7; an autonomous run doesn't get to skip the artifact obligations a human run has.)
    e. **Collect the review notes:** every item that deserves a reviewer's deeper look — whether that reviewer is a human or a `/sdlc:review-run` pass — carried-forward MINOR findings, accepted-with-caveat decisions, assumptions the run made under its own judgment (from the designer's evidence list, assessor rationales, and reviewer notes). Store them in `final_review.notes`. Set `phase: READY_FOR_PR`, persist.
 
 7. **PUSH + PR** (`phase: READY_FOR_PR` → `PR_OPENED`).
    - **Under `writeMode: incognito`, stop here instead of pushing.** Report: batches completed, final review clean, branch `<branch>` ready at its current commits. Invite the developer to rework or consolidate commits before pushing, and tell them `/sdlc:story-pr` (or a manual `git push` + `gh pr create`) is theirs to run when ready — that action *is* the explicit go-ahead this mode exists to require, so nothing here needs to gate it further. `phase` stays `READY_FOR_PR` (already a legitimate "may push" phase in `gate-git.js`'s `PUSH_OK` set). Skip to Step 8.
-   - Otherwise: push the branch (`git push -u origin <branch>`) and open the PR: `gh pr create --base <base_branch> --title "<KEY>: <summary>" --body <body>` using the `/sdlc:story-pr` body template — AC checklist with evidence, test plan with real outcomes, required CI checks. Add an **Audit trail** line pointing at the design note (and ADRs) in the diff and the provenance record (tracker comments, or `provenance.md`) on the story.
+   - Otherwise: push the branch (`git push -u origin <branch>`, `-C <worktree>` when set) and open the PR: `gh pr create --base <base_branch> --title "<KEY>: <summary>" --body <body>` (same worktree-qualified form) using the `/sdlc:story-pr` body template — AC checklist with evidence, test plan with real outcomes, required CI checks. Add an **Audit trail** line pointing at the design note (and ADRs) in the diff and the provenance record (tracker comments, or `provenance.md`) on the story.
    - Post the review notes from 6e as a PR comment (line-anchored via the review-comments API where a note maps to a diff line; otherwise one summary comment), and dispatch `scribe` with `REVIEW_NOTES` to mirror them onto the tracker story.
    - Record `pr: {number, url, base}`, set `phase: PR_OPENED`, persist.
 
@@ -190,7 +203,9 @@ At the point the run actually ends — Step 9 (or, under `--bypass`, the end of 
 
 ## Resume semantics
 
-`--resume` reads `docs/stories/<KEY>/story-state.json` — and, whenever the `checkpoint` block is filled, `checkpoint.md` first: it names the exact sub-step to continue from and carries the context that never made it into formal artifacts. `write_mode`, `tracker`, and `local_key` are read back from state, not re-derived — a repo's tracker config could have changed between sessions, but the run stays consistent with what it started as. (Passing `--incognito` again at resume is harmless; there's no supported way to *un*-incognito a resumed run, since earlier writes may already have gone local only — start a fresh run instead if the tracker situation genuinely changed.) Resume works in a brand-new chat by design. Then act by phase:
+`--resume` first **locates** `docs/stories/<KEY>/story-state.json`, per `skills/worktree-mode/SKILL.md`: check this session's own root (main) first — the common case. Not found there → run `git worktree list` and check each registered worktree's `docs/stories/<KEY>/` for a match; found in one → **copy** the whole `docs/stories/<KEY>/` directory into main, then continue from the copy. This is what recovers a run that got trapped writing to a worktree's own copy because the developer had already entered it (see Step 1) — it only happens once someone resumes from a main-rooted session after exiting (`ExitWorktree keep`), not automatically at any earlier point.
+
+Once located, read `story-state.json` — and, whenever the `checkpoint` block is filled, `checkpoint.md` first: it names the exact sub-step to continue from and carries the context that never made it into formal artifacts. `write_mode`, `tracker`, `local_key`, `model_effort`, and `worktree` are read back from state, not re-derived — a repo's tracker/effort config could have changed between sessions, but the run stays consistent with what it started as. (Passing `--incognito` again at resume is harmless; there's no supported way to *un*-incognito a resumed run, since earlier writes may already have gone local only — start a fresh run instead if the tracker situation genuinely changed. Passing `--effort` again at resume *does* change it, deliberately — see the state-schema note above.) Resume works in a brand-new chat by design. Then act by phase:
 
 - **`DESIGN`** — if the note draft exists but wasn't architect-approved, resume at the pending review/revision cycle; unanswered `open_questions` are re-asked.
 - **`INTAKE`** — re-dispatch intake fresh (read-only, idempotent).
@@ -212,13 +227,15 @@ At the point the run actually ends — Step 9 (or, under `--bypass`, the end of 
 ```json
 {
   "story_key": "<KEY or local slug>",
-  "schema_version": 3,
+  "schema_version": 4,
   "tracker": "jira|linear|none",
   "write_mode": "normal|incognito",
   "local_key": false,
   "local_ac": "verbatim success criteria — present only when local_key is true or tracker is none",
   "provenance_file": "docs/stories/<KEY>/provenance.md — present once write_mode has redirected at least one write there",
   "branch_model": "sprint|direct",
+  "model_effort": "very-low|low|medium|high|extra-high",
+  "worktree": "absolute path, or null under --no-worktree",
   "phase": "DESIGN|INTAKE|PLAN|IMPLEMENT|FINAL_REVIEW|READY_FOR_PR|PR_OPENED|AUTO_REVIEW|AUTO_FIX|AWAITING_CI|MERGED|CLOSED|PAUSED",
   "branch": "feat/<key-lower>-slug",
   "base_branch": "main, or sprint/<id> under branchModel: sprint — resolved at branch cut; the PR target",
@@ -292,11 +309,13 @@ At the point the run actually ends — Step 9 (or, under `--bypass`, the end of 
 
 `retries_used` is keyed by batch number; replans never reuse a number, so a replacement batch always starts at zero.
 
-`bypass` is set at Step 1 init from whether `--bypass` was passed — it's what tells `--resume` whether a `PR_OPENED`-or-later state should stop (default) or continue the tail; it's always `false` on an incognito run (rejected together at Step 0). `incognito` and `write_mode`/`tracker`/`local_key`/`branch_model` are set the same way from Step 0's resolution and read back on `--resume`. `technical` is set the same way from `--technical` and read back on `--resume` so the run keeps its output voice across sessions (see `skills/plain-language/STANDARD.md`). `dispatches` is always appended to, regardless of `--show-stats` — that flag only gates auto-publishing the Artifact, not collection (see **Usage statistics**). `auto_review` and `merge` are populated only by the `--bypass` tail; both stay null on an ordinary run (always null on an incognito run, since bypass is unreachable there).
+`bypass` is set at Step 1 init from whether `--bypass` was passed — it's what tells `--resume` whether a `PR_OPENED`-or-later state should stop (default) or continue the tail; it's always `false` on an incognito run (rejected together at Step 0). `incognito` and `write_mode`/`tracker`/`local_key`/`branch_model` are set the same way from Step 0's resolution and read back on `--resume`. `model_effort` is resolved once at Step 0 per `skills/model-effort/SKILL.md` and read back (not re-resolved) on `--resume` — passing `--effort` again is harmless, and unlike `write_mode` there's no correctness reason to forbid changing it mid-run if you deliberately want to. `worktree` is set at Step 1 per `skills/worktree-mode/SKILL.md` and never changes for the life of the run. `technical` is set the same way from `--technical` and read back on `--resume` so the run keeps its output voice across sessions (see `skills/plain-language/STANDARD.md`). `dispatches` is always appended to, regardless of `--show-stats` — that flag only gates auto-publishing the Artifact, not collection (see **Usage statistics**). `auto_review` and `merge` are populated only by the `--bypass` tail; both stay null on an ordinary run (always null on an incognito run, since bypass is unreachable there).
 
 ## Model tiering (cost control)
 
-| Agent | Model | Why |
+The table below is the `high`-tier default — what every agent's own frontmatter already declares, and what a repo with no `modelEffort` configured runs at. For every other tier (`very-low`/`low`/`medium`/`extra-high`), see `skills/model-effort/SKILL.md`'s table — this run resolves `model_effort` once at Step 0 and passes an explicit `model` override on every dispatch below looked up from there, superseding the agent file's own default without editing it.
+
+| Agent | Model (`high`) | Why |
 |-------|-------|-----|
 | `designer` | `opus` | Autonomous design decisions — the highest-stakes judgment in the run. |
 | `architect` | `opus` | The adversarial check on those decisions and on the plan; must out-judge what it reviews. |
@@ -310,7 +329,7 @@ At the point the run actually ends — Step 9 (or, under `--bypass`, the end of 
 | `scribe` | `haiku` | Template-driven tracker comments (or provenance entries) from structured state. |
 | `pr-reviewer` | `sonnet` | (`--bypass` only) The AUTO_REVIEW step's single-PR pass and AUTO_FIX's convergence re-reviews, reused from `review-run`/`review-fix`. |
 
-To rebalance for a specific story, pass a `model` override on the Task dispatch itself. (Installed marketplace plugins are read-only on the installee's machine.)
+To rebalance a single dispatch beyond what the resolved tier already does, pass a further `model` override on that Task call. (Installed marketplace plugins are read-only on the installee's machine.)
 
 ## Notes
 
@@ -320,4 +339,5 @@ To rebalance for a specific story, pass a `model` override on the Task dispatch 
 - **`--bypass`'s merge step is this plugin's first autonomous `git`/`gh` action that isn't gated by a hook.** `gate-git.js` only pattern-matches `git commit`/`git push`/`gh pr create` — it doesn't intercept `gh pr merge`, so nothing about the hook needed to change, but nothing about it double-checks this new caller either. The command-level guards are what carry the weight here: never onto `main` in a `sprint`-model repo, never without a clean AUTO_REVIEW verdict, never without green required checks. Treat those guards as load-bearing, not advisory.
 - **Artifact integrity is non-negotiable.** Durable artifacts (design note, threshold ADRs) are created before they're needed, validated when referenced, and committed when changed; working artifacts (context pack, plan, state) exist for the life of the run. A missing or broken artifact stops the run; it is never worked around.
 - All run state lives on disk in `docs/stories/<KEY>/` (untracked); nothing depends on session memory, which is what makes `--resume` safe after a dead session. Corollary: don't run `git clean -fdx` mid-run — it deletes the state of an in-flight story.
-- See `skills/tracker-adapter/SKILL.md` for the full tracker/write-mode resolution logic referenced throughout — this file only describes how story-run *uses* it, not how it works.
+- See `skills/tracker-adapter/SKILL.md` for the full tracker/write-mode resolution logic referenced throughout, `skills/model-effort/SKILL.md` for the full model-tier table and resolution, and `skills/worktree-mode/SKILL.md` for the full worktree resolution/fallback/recovery logic — this file only describes how story-run *uses* each, not how they work.
+- **`gate-git.js` needs no worktree-awareness of its own.** It already resolves "the repo a Bash command actually targets" independently, from the command string itself (`cd <path> &&` / `git -C <path>` prefixes) — the same mechanism this file's git operations use to reach `worktree`. A push/commit this run issues against the worktree is gated correctly without any change to the hook.

@@ -1,6 +1,6 @@
 ---
 description: "Autonomous multi-PR review subsystem: parallel story-PR reviews with cross-ticket compatibility checks, and the sprint-close gate that verifies a sprint is safe to merge to main."
-argument-hint: "<PR# ...> [--fix] | --sprint [id] [--depth spot|full] [--post] [--close] [--technical] [--show-stats] [--resume]"
+argument-hint: "<PR# ...> [--fix] [--effort <tier>] | --sprint [id] [--depth spot|full] [--effort <tier>] [--post] [--close] [--technical] [--show-stats] [--resume]"
 ---
 
 # /sdlc:review-run
@@ -20,8 +20,8 @@ Parallel independent reviews of each PR (DoD + correctness + design conformance)
 ## Usage
 
 ```
-/sdlc:review-run <PR# ...> [--fix] [--post] [--technical] [--show-stats] [--resume]
-/sdlc:review-run --sprint [id] [--depth spot|full] [--post] [--close] [--technical] [--show-stats] [--resume]
+/sdlc:review-run <PR# ...> [--fix] [--effort <tier>] [--post] [--technical] [--show-stats] [--resume]
+/sdlc:review-run --sprint [id] [--depth spot|full] [--effort <tier>] [--post] [--close] [--technical] [--show-stats] [--resume]
 ```
 
 Arguments arrive as `$ARGUMENTS`. Examples:
@@ -29,6 +29,7 @@ Arguments arrive as `$ARGUMENTS`. Examples:
 ```
 /sdlc:review-run 27 28 29
 /sdlc:review-run 27 28 29 --post
+/sdlc:review-run 27 28 29 --effort low
 /sdlc:review-run --sprint 2
 /sdlc:review-run --sprint 2 --depth full --close
 ```
@@ -36,16 +37,17 @@ Arguments arrive as `$ARGUMENTS`. Examples:
 - `<PR# ...>` — one or more story-PR numbers (Mode A). At least one required when `--sprint` is absent.
 - `--sprint [id]` — sprint-close gate (Mode B), `branchModel: sprint` only. Id omitted → highest-numbered `sprint/*` on origin; ambiguous → ask. On a `branchModel: direct` repo, this flag stops the run immediately with a plain explanation instead of running the gate — see **Mode B under `branchModel: direct`**.
 - `--depth spot|full` — Mode B per-story verification depth (default `spot`): *spot* re-verifies each merged story's completion record and samples its AC evidence; *full* re-runs a complete `pr-reviewer` pass on every merged story PR. Use `full` for high-stakes sprints or when spot checks surface smells.
+- `--effort <tier>` — override `.sdlc/config.json`'s `modelEffort` for this run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/`high`/`extra-high`). Omitted → the config's `modelEffort`, or `high` if that's unset too. Applies to either mode — every `pr-reviewer`/`integrator` dispatch below passes an explicit `model` looked up from that skill's table for the resolved tier.
 - `--post` — post GitHub reviews/comments without the batch confirmation. Without it, findings are reported in chat first and posted only on your one-time go-ahead **per batch** (never a question per PR).
 - `--fix` — **Mode A only.** After the batch report (step 6), chain into the `/sdlc:review-fix` procedure for each not-clean PR **the current developer authored**: triage findings, fix the fixable, push, re-verify — see that command for the full contract (budgets, escalation, hard boundaries). Teammates' PRs and integrator cross-findings are never autofixed — they stay report-only. **With `--sprint`, reject the flag with a one-line reason** (auto-committing to a sprint branch during the close gate is not a thing this plugin invites) and run Mode B normally. Review-run itself stays read-only either way: its own agents never write; every code change happens inside the review-fix procedure, behind its gates.
 - `--close` — Mode B only: on `SPRINT_READY`, open the sprint→main PR per `/sdlc:sprint-pr` (template body + this run's gate report). Without it, Mode B stops at the verdict.
 - `--technical` — keep chat output in the engineer-level voice. **Without it (the default), everything reported to the developer in chat — per-PR verdicts, cross-findings, the sprint gate report, the batch-post confirmation — follows `skills/plain-language/STANDARD.md`**; the GitHub reviews/comments actually posted, the sprint PR body, and tracker mirrors keep their fixed technical form either way. Recorded as `technical` in `review-state.json` at Step 0 init so `--resume` keeps the mode; passing the flag at resume overrides. With `--close`, the mode carries into the inline `sprint-pr` procedure.
 - `--show-stats` — auto-publish the fixed-format usage report (per-dispatch model/timing/tokens) as a claude.ai Artifact when the run concludes. Dispatch data is always collected and always snapshotted locally regardless of this flag — forgot to pass it? `/sdlc:show-stats <run-id>` renders the same report on demand, mid-run or after. Default: off (report still exists; it just isn't auto-published). See **Usage statistics** below.
-- `--resume` — continue from `docs/stories/_reviews/<run-id>/review-state.json` (completed per-PR reviews are not re-run).
+- `--resume` — continue from `docs/stories/_reviews/<run-id>/review-state.json` (completed per-PR reviews are not re-run). `model_effort` is read back from state, not re-resolved — passing `--effort` again is harmless (it just reasserts or deliberately changes it, same as `story-run`).
 
 ## Steps — Mode A (PR batch)
 
-0. **Preflight.** `gh` authenticated; resolve the tracker per `skills/tracker-adapter/SKILL.md` (`.sdlc/config.json`, or detect the registered MCP family and ask — same resolution `story-run` uses); project config resolved from the target repo's `CLAUDE.md` (project key, verify commands, required CI check names, mandatory rules). Initialize `docs/stories/_reviews/<run-id>/review-state.json` (untracked — `docs/stories/.gitignore` covers it; run-id = sorted PR numbers or `sprint-<id>`).
+0. **Preflight.** `gh` authenticated; resolve the tracker per `skills/tracker-adapter/SKILL.md` (`.sdlc/config.json`, or detect the registered MCP family and ask — same resolution `story-run` uses); project config resolved from the target repo's `CLAUDE.md` (project key, verify commands, required CI check names, mandatory rules). **Resolve `model_effort`** per `skills/model-effort/SKILL.md`: `--effort <tier>` if passed, else `.sdlc/config.json`'s `modelEffort`, else `high`. Every `pr-reviewer`/`integrator` dispatch for the rest of this run passes an explicit `model` argument looked up from that skill's table for this tier — not restated at each dispatch below. Initialize `docs/stories/_reviews/<run-id>/review-state.json` (untracked — `docs/stories/.gitignore` covers it; run-id = sorted PR numbers or `sprint-<id>`), recording `model_effort` in it.
 
 1. **Resolve the review set.** For each PR: `gh pr view --json number,title,author,baseRefName,headRefName,state,mergeable,statusCheckRollup`. Derive each story key from the PR title/branch; when a tracker is configured, fetch its issue (full AC) via the adapter's `get_issue` op; fetch its design note path. Under `tracker: none`, skip the fetch — the AC lives in the design note and/or the PR body, and `pr-reviewer` is told so rather than being handed an empty AC as if it were real. A PR that is closed, already merged (in Mode A), or key-less is reported and dropped from the set — not silently skipped.
 
@@ -57,11 +59,11 @@ Arguments arrive as `$ARGUMENTS`. Examples:
 
 5. **Post (gated).** With `--post`, or after your one-time batch confirmation: for each PR, submit `gh pr review` (`--request-changes` when there are GAPs/BLOCKING/MAJOR findings, `--approve` only on a clean pass, `--comment` otherwise) with the verdict + findings in the body; line-anchor findings that map to diff lines via the review-comments API. Cross-findings are posted on **every** PR they implicate, cross-referencing the others. Optionally dispatch `scribe` (`REVIEW_NOTES`) to mirror each story's outcome onto its tracker story via the adapter's `add_comment` op — skipped when `tracker: none` (nothing to mirror to). Persist outcomes to the state file. Without `--fix`, this is the end of the run: write the local stats snapshot now regardless of `--show-stats`, and if it was passed, also render and publish the Artifact (see **Usage statistics** below). **Nothing under `docs/stories/_reviews/<run-id>/` is deleted** when the batch completes — `review-state.json` and `_stats/` are both already local-only and gitignored, so they're just left as a bonus local reference.
 
-6. **Fix (only with `--fix`).** For each not-clean PR (verdict `REQUEST_CHANGES`/`BLOCKED`, or any BLOCKING/MAJOR finding) **authored by the current developer**, run the `/sdlc:review-fix` procedure inline, **sequentially** (its fix loop checks out the PR's head branch — the shared working tree rule from step 2 applies), passing that PR's reviewer findings directly. Skips are explicit in the report: teammate-authored PRs ("report-only — not your PR"), and integrator cross-findings (always escalate, never autofixed). Each PR's outcome (`FIXED_CLEAN`, or `ESCALATE` with residuals) is appended to the state file; its dispatches are recorded in this run's `dispatches[]` — one run, one stats report. Then close out as step 5 describes (snapshot, optional Artifact).
+6. **Fix (only with `--fix`).** For each not-clean PR (verdict `REQUEST_CHANGES`/`BLOCKED`, or any BLOCKING/MAJOR finding) **authored by the current developer**, run the `/sdlc:review-fix` procedure inline, **sequentially** (its fix loop checks out the PR's head branch — the shared working tree rule from step 2 applies), passing that PR's reviewer findings directly. Skips are explicit in the report: teammate-authored PRs ("report-only — not your PR"), and integrator cross-findings (always escalate, never autofixed). Each PR's outcome (`FIXED_CLEAN`, or `ESCALATE` with residuals) is appended to the state file; its dispatches are recorded in this run's `dispatches[]` — one run, one stats report. The `model_effort` resolved at Step 0 passes straight through to review-fix's inline dispatches (`assessor`, `coder`, `validator`, `pr-reviewer`) — it is not re-resolved. Then close out as step 5 describes (snapshot, optional Artifact).
 
 ## Steps — Mode B (sprint close)
 
-0. **`branchModel` gate.** Read `.sdlc/config.json`. **If `branchModel: direct`, stop immediately** and say plainly: this repo merges story PRs straight to `main`, self-approved — there is no sprint branch and nothing for a sprint-close gate to verify. Point at `/sdlc:story-pr` and `/sdlc:close-story` for the normal merge path, and at Mode A for review coverage on a `direct` repo. Do nothing else — no inventory, no dispatches, no state file. Under `branchModel: sprint`, proceed to Step 1; everything below is unchanged from the team workflow.
+0. **`branchModel` gate.** Read `.sdlc/config.json`. **If `branchModel: direct`, stop immediately** and say plainly: this repo merges story PRs straight to `main`, self-approved — there is no sprint branch and nothing for a sprint-close gate to verify. Point at `/sdlc:story-pr` and `/sdlc:close-story` for the normal merge path, and at Mode A for review coverage on a `direct` repo. Do nothing else — no inventory, no dispatches, no state file. Under `branchModel: sprint`, proceed to Step 1; everything below is unchanged from the team workflow. Before Step 1, also **resolve `model_effort`** per `skills/model-effort/SKILL.md` (same resolution order as Mode A) and record it in `review-state.json` — every `pr-reviewer`/`integrator` dispatch below passes an explicit `model` argument looked up from that skill's table for this tier.
 
 1. **Inventory the sprint.** Resolve `sprint/<id>`; list the story PRs merged into it (merge commits) and reconcile against the tracker's sprint/cycle board (the adapter's `search` op): every merged story **Done** in the tracker (flag any that aren't), every board story either merged or explicitly out (flag In Progress strays), any open PRs still targeting the sprint branch (they land or get descoped before close — never silently ride or vanish).
 
@@ -102,6 +104,8 @@ At the end of the run (Mode A step 5 / Mode B step 7): **always** write a local 
 - Provenance: **GitHub reviews/comments on the PRs themselves** (the natural home for review records), the gate report embedded in the sprint PR body, and optional per-story tracker mirrors via `scribe`. Nothing is committed to git by this command, ever.
 
 ## Model tiering
+
+The table below is the `high`-tier default — what every agent's own frontmatter already declares, and what a repo with no `modelEffort` configured runs at. For every other tier (`very-low`/`low`/`medium`/`extra-high`), see `skills/model-effort/SKILL.md`'s table — this run resolves `model_effort` once at Step 0 (both modes) and passes an explicit `model` override on every dispatch below looked up from there, superseding the agent file's own default without editing it.
 
 | Agent | Model | Why |
 |-------|-------|-----|
