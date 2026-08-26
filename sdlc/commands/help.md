@@ -148,7 +148,7 @@ Only if asked (or a single command was requested) render:
 | **review-run** | `--sprint [id]` | Sprint-close gate mode instead of PR-batch mode. `branchModel: sprint` only — reports not applicable under `branchModel: direct`. |
 | **review-run** | `--depth spot\|full` | Sprint-mode per-story verification depth (default spot). |
 | **review-run** | `--fix` | Mode A only (rejected with `--sprint`): after the batch report, run the `review-fix` procedure on each not-clean PR you authored — teammates' PRs and cross-ticket findings stay report-only. |
-| **review-run** | `--post` | Post GitHub reviews without the per-batch confirmation. |
+| **review-run** | `--post` | Post GitHub reviews (and, Mode A, mirror outcomes to the tracker) without the per-batch confirmation. Without `--post` or that confirmation, nothing external happens at all — no GitHub review, no tracker comment. |
 | **review-run** | `--close` | On SPRINT_READY, open the sprint→main PR (never merges). `branchModel: sprint` only. |
 | **review-fix** | `--budget N` | Fix-loop attempts before escalating (default 2). |
 | **story-pr** | `--review` / `--fix` | Pre-PR self-review of the diff; `--fix` applies high-confidence findings (needs `--review`). |

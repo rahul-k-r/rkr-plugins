@@ -57,7 +57,7 @@ Arguments arrive as `$ARGUMENTS`. Examples:
 
 4. **Consolidate and report.** Per-PR: verdict + findings. Cross: compatibility verdict + merge order + conflicts, each mapped to the owning story/PR. Anything `BLOCKED` or with BLOCKING cross-findings is called out first.
 
-5. **Post (gated).** With `--post`, or after your one-time batch confirmation: for each PR, submit `gh pr review` (`--request-changes` when there are GAPs/BLOCKING/MAJOR findings, `--approve` only on a clean pass, `--comment` otherwise) with the verdict + findings in the body; line-anchor findings that map to diff lines via the review-comments API. Cross-findings are posted on **every** PR they implicate, cross-referencing the others. Optionally dispatch `scribe` (`REVIEW_NOTES`) to mirror each story's outcome onto its tracker story via the adapter's `add_comment` op — skipped when `tracker: none` (nothing to mirror to). Persist outcomes to the state file. Without `--fix`, this is the end of the run: write the local stats snapshot now regardless of `--show-stats`, and if it was passed, also render and publish the Artifact (see **Usage statistics** below). **Nothing under `docs/stories/_reviews/<run-id>/` is deleted** when the batch completes — `review-state.json` and `_stats/` are both already local-only and gitignored, so they're just left as a bonus local reference.
+5. **Post (gated) — the single gate covers both GitHub and the tracker.** With `--post`, or after your one-time batch confirmation: for each PR, submit `gh pr review` (`--request-changes` when there are GAPs/BLOCKING/MAJOR findings, `--approve` only on a clean pass, `--comment` otherwise) with the verdict + findings in the body; line-anchor findings that map to diff lines via the review-comments API. Cross-findings are posted on **every** PR they implicate, cross-referencing the others. **Under that same gate** — never on any other condition — dispatch `scribe` (`REVIEW_NOTES`) to mirror each story's outcome onto its tracker story via the adapter's `add_comment` op; skipped when `tracker: none` (nothing to mirror to). **Without `--post` and without the batch confirmation, nothing external happens at all** — no GitHub review, no tracker comment; findings stay in chat only. Persist outcomes to the state file. Without `--fix`, this is the end of the run: write the local stats snapshot now regardless of `--show-stats`, and if it was passed, also render and publish the Artifact (see **Usage statistics** below). **Nothing under `docs/stories/_reviews/<run-id>/` is deleted** when the batch completes — `review-state.json` and `_stats/` are both already local-only and gitignored, so they're just left as a bonus local reference.
 
 6. **Fix (only with `--fix`).** For each not-clean PR (verdict `REQUEST_CHANGES`/`BLOCKED`, or any BLOCKING/MAJOR finding) **authored by the current developer**, run the `/sdlc:review-fix` procedure inline, **sequentially** (its fix loop checks out the PR's head branch — the shared working tree rule from step 2 applies), passing that PR's reviewer findings directly. Skips are explicit in the report: teammate-authored PRs ("report-only — not your PR"), and integrator cross-findings (always escalate, never autofixed). Each PR's outcome (`FIXED_CLEAN`, or `ESCALATE` with residuals) is appended to the state file; its dispatches are recorded in this run's `dispatches[]` — one run, one stats report. The `effort` resolved at Step 0 passes straight through to review-fix's inline dispatches (`assessor`, `coder`, `validator`, `pr-reviewer`) — it is not re-resolved. Then close out as step 5 describes (snapshot, optional Artifact).
 
@@ -93,7 +93,7 @@ At the end of the run (Mode A step 5 / Mode B step 7): **always** write a local 
 
 ## When the human is asked
 
-- **Posting external reviews** — once per batch (skipped with `--post`). Reviews on teammates' PRs are outward-facing; the batch confirmation is the only gate.
+- **Posting external reviews (and, Mode A, any tracker mirror alongside them)** — once per batch (skipped with `--post`). Reviews on teammates' PRs are outward-facing; the batch confirmation is the only gate, and it covers both destinations together, never one without the other.
 - **Opening the sprint→main PR** — only via explicit `--close` or an explicit yes at the verdict.
 - **HOLD overrides** — the run never overrides its own `HOLD`; if you want to close anyway, that's your call, made outside the run.
 - Everything else — review depth judgments, severity calls, merge-order derivation — is autonomous and lands in the reports.
@@ -101,7 +101,7 @@ At the end of the run (Mode A step 5 / Mode B step 7): **always** write a local 
 ## State & provenance
 
 - Working state: `docs/stories/_reviews/<run-id>/review-state.json` — untracked (covered by `docs/stories/.gitignore`), persisted per completed per-PR review so `--resume` skips finished work. Left in place after the run completes, same as everything else under that directory — it's a local convenience, not the record of what happened.
-- Provenance: **GitHub reviews/comments on the PRs themselves** (the natural home for review records), the gate report embedded in the sprint PR body, and optional per-story tracker mirrors via `scribe`. Nothing is committed to git by this command, ever.
+- Provenance: **GitHub reviews/comments on the PRs themselves** (the natural home for review records), the gate report embedded in the sprint PR body, and — **Mode A only, under the same `--post`/batch-confirmation gate as the GitHub reviews, never on its own** — a per-story tracker mirror via `scribe`. Mode B never touches the tracker at all (consistent with "never transitions the tracker" — its record of what happened is the gate report in the sprint PR body). Nothing is committed to git by this command, ever.
 
 ## Model tiering
 
@@ -112,7 +112,7 @@ The table below is the `high`-tier default — what every agent's own frontmatte
 | `pr-reviewer` | `sonnet` | Per-PR review runs N-wide in parallel; sonnet catches DoD/correctness/conformance issues at defensible cost. Override to `opus` at dispatch for high-stakes PRs or `--depth full` sprint audits. |
 | `integrator` | `opus` | Cross-ticket compatibility is the highest-judgment task here — it reasons about interactions nobody's individual PR shows. |
 | `validator` | `haiku` | (reused) Mechanical gate on the sprint head. |
-| `scribe` | `haiku` | (reused) Tracker mirrors of review outcomes. |
+| `scribe` | `haiku` | (reused, Mode A only, gated by `--post`/batch confirmation) Tracker mirrors of review outcomes. |
 
 ## Notes
 
