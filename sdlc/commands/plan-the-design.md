@@ -149,7 +149,7 @@ Present the full draft to the developer:
 
 On approval:
 
-1. **Write the design note** to `docs/design-notes/$STORY_KEY.md`.
+1. **Write the design note** to `docs/design-notes/$STORY_KEY.md`. Under `.sdlc/config.json`'s `localDocs: true` (`skills/local-docs/SKILL.md`), this is also the note's *permanent* location — nothing later copies or commits it into a worktree.
 2. **Post cross-story obligations.** For each obligation identified in Q4, post a traceability comment on the target ticket via the tracker-adapter's `add_comment` op (`skills/tracker-adapter/SKILL.md`), whichever tracker (`jira`|`linear`) resolved this session. Format: "Design note for $STORY_KEY establishes obligation: <obligation text>. See `docs/design-notes/$STORY_KEY.md` §5." **If `tracker: none` resolved (or the write fails)**, this command doesn't switch to a full incognito mode — it's an interactive session, not an autonomous run — so just print each obligation to the developer instead, and tell them plainly it needs to be tracked manually; never drop one silently.
 3. **Report graduation backlog.** Print a summary of decisions needing graduation beyond the note:
    - Decisions → ADR (with proposed ADR title).

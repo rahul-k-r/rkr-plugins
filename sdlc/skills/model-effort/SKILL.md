@@ -10,14 +10,14 @@ Every agent file's frontmatter `model:` field is its **High-tier default** — t
 ## Resolution
 
 1. **`--effort <tier>` on the invoking command**, if passed — wins outright for this run.
-2. **Else `.sdlc/config.json`'s `modelEffort` field** (`"very-low"|"low"|"medium"|"high"|"extra-high"`).
-3. **Else `"high"`** — the plugin's original behavior, unchanged. This is the default for any repo that hasn't set `modelEffort` at all, so every existing config keeps working with zero migration.
+2. **Else `.sdlc/config.json`'s `effort` field** (`"very-low"|"low"|"medium"|"high"|"extra-high"`).
+3. **Else `"high"`** — the plugin's original behavior, unchanged. This is the default for any repo that hasn't set `effort` at all, so every existing config keeps working with zero migration.
 
-Resolved once per run, recorded in `story-state.json`'s `model_effort` field, and read back (not re-resolved) on `--resume` — a repo's config could change between sessions, but a run stays consistent with what it started as, same as `write_mode`/`branch_model`. Passing `--effort` again at resume is harmless (it just reasserts the same value unless you deliberately want to change it, which is allowed — unlike `write_mode`, there's no correctness reason to forbid changing a run's effort tier mid-flight).
+Resolved once per run, recorded in `story-state.json`'s `effort` field, and read back (not re-resolved) on `--resume` — a repo's config could change between sessions, but a run stays consistent with what it started as, same as `write_mode`/`branch_model`. Passing `--effort` again at resume is harmless (it just reasserts the same value unless you deliberately want to change it, which is allowed — unlike `write_mode`, there's no correctness reason to forbid changing a run's effort tier mid-flight).
 
 ## Using it
 
-Every Task dispatch, for every agent, passes an explicit `model` argument looked up from the table below for the resolved tier — this **overrides** the agent file's own frontmatter default, it doesn't edit it. A command that dispatches `coder` under `modelEffort: medium` passes `model: opus` on that specific Task call; the same command under `modelEffort: low` passes `model: sonnet` instead. The agent file itself never changes.
+Every Task dispatch, for every agent, passes an explicit `model` argument looked up from the table below for the resolved tier — this **overrides** the agent file's own frontmatter default, it doesn't edit it. A command that dispatches `coder` under `effort: medium` passes `model: opus` on that specific Task call; the same command under `effort: low` passes `model: sonnet` instead. The agent file itself never changes.
 
 ## The table
 
@@ -55,6 +55,7 @@ Organized by each agent's High-tier (frontmatter) default — the stable referen
 
 ## Which commands this applies to
 
-Any command that dispatches a subagent via the Task tool: `story-run`, `design-run` (also reached inline by `story-run`'s DESIGN phase), `review-run`, `review-fix` (and the `--bypass` tail's inline `review-fix` procedure), `product-design-review`. Each should accept `--effort <tier>` alongside its other flags, resolve per the order above at its own Step 0 (next to tracker/write-mode resolution), and record `model_effort` in whatever state file it maintains.
+Any command that dispatches a subagent via the Task tool: `story-run`, `design-run` (also reached inline by `story-run`'s DESIGN phase), `review-run`, `review-fix` (and the `--bypass` tail's inline `review-fix` procedure), `product-design-review`. Each should accept `--effort <tier>` alongside its other flags, resolve per the order above at its own Step 0 (next to tracker/write-mode resolution), and record `effort` in whatever state file it maintains.
 
 Commands with no subagent dispatch (`init`, `commit`, `adr`, `build-check`, `story-pr`, `story-check`, `close-story`, `sprint-pr`, `show-stats`) have nothing to resolve — this skill doesn't apply to them.
+

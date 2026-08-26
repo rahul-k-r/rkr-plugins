@@ -39,9 +39,9 @@ INVENTORY → FLOW SWEEP → DELIBERATE → VERIFY+SYNTHESIZE ⇒ SESSIONS (huma
   below BLOCKER; `standard` = all P1/P2 flows + variants, panels on
   BLOCKER/GAP-grade issues; `exhaustive` = every flow × every variant, full
   panel width, second verify pass.
-- `--effort <tier>` — override `.sdlc/config.json`'s `modelEffort` for this
+- `--effort <tier>` — override `.sdlc/config.json`'s `effort` for this
   run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/
-  `high`/`extra-high`). Omitted → the config's `modelEffort`, or `high` if
+  `high`/`extra-high`). Omitted → the config's `effort`, or `high` if
   that's unset too. Only meaningful on the initial autonomous-phase
   invocation — resolved once at Preflight (Step 0) and read back on
   `--resume`/`--session`/`--publish`, never re-resolved.
@@ -84,9 +84,9 @@ without one). Missing archetype: ask once, then record it into `CLAUDE.md`.
    (`.sdlc/config.json`, or detect the registered MCP family and ask); config
    resolved and inputs exist; `docs/product-design-review/<run-id>/` created
    (`run-id` = date + short slug); `run-state.json` initialized (untracked
-   working state, story-run rules). **Resolve `model_effort`** per
+   working state, story-run rules). **Resolve `effort`** per
    `skills/model-effort/SKILL.md`: `--effort <tier>` if passed, else
-   `.sdlc/config.json`'s `modelEffort`, else `high` — recorded in
+   `.sdlc/config.json`'s `effort`, else `high` — recorded in
    `run-state.json` and read back (not re-resolved) on `--resume`. Every
    `surveyor`/`cartographer`/`flow-tracer`/`moderator`/`verifier`/`publisher`/
    `panelist` dispatch across every phase below passes an explicit `model`
@@ -208,7 +208,7 @@ never re-run). Sessions resume mid-docket, per partition, in any chat.
 
 ## Model tiering
 
-The table below is the `high`-tier default — what every agent's own frontmatter already declares, and what a repo with no `modelEffort` configured runs at. For every other tier (`very-low`/`low`/`medium`/`extra-high`), see `skills/model-effort/SKILL.md`'s table — this run resolves `model_effort` once at Preflight (Step 0) and passes an explicit `model` override on every dispatch below looked up from there, superseding the agent file's own default without editing it.
+The table below is the `high`-tier default — what every agent's own frontmatter already declares, and what a repo with no `effort` configured runs at. For every other tier (`very-low`/`low`/`medium`/`extra-high`), see `skills/model-effort/SKILL.md`'s table — this run resolves `effort` once at Preflight (Step 0) and passes an explicit `model` override on every dispatch below looked up from there, superseding the agent file's own default without editing it.
 
 | Agent | Model | Why |
 |-------|-------|-----|
