@@ -1,6 +1,6 @@
 ---
 description: "Apply review findings to a PR you authored: triage each finding (fixable vs. needs-your-judgment), fix the fixable on the story branch, verify with a fresh review pass, and escalate the rest. The write-side counterpart that keeps review-run purely read-only."
-argument-hint: "<PR#> [--budget N] [--effort <tier>] [--technical] [--show-stats]"
+argument-hint: "<PR#> [--budget N] [--review] [--effort <tier>] [--technical] [--show-stats]"
 ---
 
 # /sdlc:review-fix
@@ -19,11 +19,12 @@ Consumes review findings against **one PR the current developer authored** and w
 ## Usage
 
 ```
-/sdlc:review-fix <PR#> [--budget N] [--effort <tier>] [--technical] [--show-stats]
+/sdlc:review-fix <PR#> [--budget N] [--review] [--effort <tier>] [--technical] [--show-stats]
 ```
 
 - `<PR#>` — exactly one PR number. Required standalone (callers pass it programmatically).
 - `--budget N` — fix-loop attempts before escalating (default `2`).
+- `--review` — when collecting findings standalone (step 1), also run `/code-review <PR#>` (low/medium effort — same default `/sdlc:story-pr --review` and `/sdlc:review-run --review` use) alongside the PR's posted reviews/threads, merged into the same triage. **When invoked inline** (`review-run --fix`, `story-run --bypass`'s `AUTO_FIX`), this is **inherited from the caller, never re-asked** — if the caller ran with `--review`, this run's own convergence check (step 4e) also re-runs `/code-review` fresh, not just `pr-reviewer`, regardless of where the original findings came from. `/code-review`'s own effort level is independent of this run's `--effort`/`skills/model-effort/SKILL.md` tier.
 - `--effort <tier>` — override `.sdlc/config.json`'s `effort` for this run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/`high`/`extra-high`). Omitted → the config's `effort`, or `high` if that's unset too. **When invoked inline (`review-run --fix`, `story-run --bypass`'s `AUTO_FIX` step), `effort` was already resolved by the caller — inherited as given, never re-resolved.**
 - `--technical` — keep chat output in the engineer-level voice. Without it (the default), everything reported in chat — the triage, the loop progress, the final verdict — follows `skills/plain-language/STANDARD.md`; commits, the PR summary comment, and any tracker mirror keep their fixed technical form either way. When a run invokes this procedure inline, the run's mode cascades in as usual.
 - `--show-stats` — auto-publish the usage report as an Artifact at the end. Collection and the local snapshot happen regardless (see **State & stats**).
@@ -32,11 +33,11 @@ No `--resume`: the loop is short and a re-review must be fresh anyway (the diff 
 
 ## Steps
 
-0. **Preflight.** `gh` authenticated; project config resolved from the target repo's `CLAUDE.md` (verify commands, mandatory rules, required CI check names). **Resolve `effort`** per `skills/model-effort/SKILL.md`: when invoked inline (`review-run --fix`, `story-run --bypass`'s `AUTO_FIX` step), it's already resolved by the caller — inherit it as given, never re-resolve. Standalone: `--effort <tier>` if passed, else `.sdlc/config.json`'s `effort`, else `high`. Every subagent dispatch below (`assessor`, `coder`, `validator`, `pr-reviewer`) passes an explicit `model` looked up from that skill's table for this tier — not restated at each dispatch below. `gh pr view --json number,title,author,baseRefName,headRefName,state,mergedAt` — enforce the **Hard boundaries** above. Working tree must be clean (dirty → stop and say why; never stash someone's work). Record the currently checked-out branch to restore at the end when this run had to switch.
+0. **Preflight.** `gh` authenticated; project config resolved from the target repo's `CLAUDE.md` (verify commands, mandatory rules, required CI check names). **Resolve `effort`** per `skills/model-effort/SKILL.md`: when invoked inline (`review-run --fix`, `story-run --bypass`'s `AUTO_FIX` step), it's already resolved by the caller — inherit it as given, never re-resolve. Standalone: `--effort <tier>` if passed, else `.sdlc/config.json`'s `effort`, else `high`. Every subagent dispatch below (`assessor`, `coder`, `validator`, `pr-reviewer`) passes an explicit `model` looked up from that skill's table for this tier — not restated at each dispatch below. **Resolve `review`** (whether a `/code-review` pass is in play): invoked inline, inherit the caller's `--review` state, never re-ask; standalone, it's whether `--review` was passed to this command directly. `gh pr view --json number,title,author,baseRefName,headRefName,state,mergedAt` — enforce the **Hard boundaries** above. Working tree must be clean (dirty → stop and say why; never stash someone's work). Record the currently checked-out branch to restore at the end when this run had to switch.
 
 1. **Collect findings.**
-   - *Invoked by a run* (`review-run --fix`, `story-run --bypass`): the caller passes its reviewer's structured findings directly — use those, don't re-fetch.
-   - *Standalone*: fetch the PR's reviews (latest review per reviewer) and unresolved review threads via `gh api`; each comment becomes a finding with its file/line anchor and the reviewer's words quoted verbatim. Nothing actionable → report "nothing to fix" and stop.
+   - *Invoked by a run* (`review-run --fix`, `story-run --bypass`): the caller passes its reviewer's structured findings directly — use those, don't re-fetch. If the caller's own `--review` was set, its set already includes `code-review`-sourced findings alongside `pr-reviewer`'s.
+   - *Standalone*: fetch the PR's reviews (latest review per reviewer) and unresolved review threads via `gh api`; each comment becomes a finding with its file/line anchor and the reviewer's words quoted verbatim. **With `--review`**, also run `/code-review <PR#>` at low/medium effort and merge its findings into the same set, tagged `source: code-review` for the audit trail. Nothing actionable → report "nothing to fix" and stop.
 
 2. **Resolve story context.** Derive the story key from the PR title/branch. Resolve the design note (`docs/design-notes/<KEY>.md` — at the session's own root if the state file's `local_docs` is `true`, `worktree` otherwise once that's resolved below), locked decisions, and any `docs/stories/<KEY>/` artifacts (context pack, plan). Record `context: full` (design note + artifacts resolve), `partial` (design note only), or `none`. **Also check `docs/stories/<KEY>/story-state.json` for a recorded `worktree`** (per `skills/worktree-mode/SKILL.md`) — this command never creates or targets one itself (no `--worktree`/`--no-worktree` flags here; it operates on a PR/branch that already exists, not something it's setting up). If the state file exists and `worktree` is non-null, record it and use it from Step 4 on: every git operation targets it via `-C`/`cd`-qualified commands, and the coder dispatch is told it's the working root. If no state file exists, or `worktree` is `null`, operate directly in the current checkout exactly as before.
 
@@ -51,9 +52,9 @@ No `--resume`: the loop is short and a re-review must be fresh anyway (the diff 
    b. Dispatch `coder` with the FIX list only — the finding text, anchors, and the assessor's remediation notes, told its working root explicitly (`worktree` when set, else the current checkout). One atomic commit per finding, staging only files it touched, never `docs/stories/`, never scope beyond the finding. A coder `DESIGN_CONFLICT` moves that finding to ESCALATE, not to a retry.
    c. Dispatch `validator` with the resolved verify commands (run against `worktree` when set). FAIL → hand the failures back to the coder within the same attempt once; still failing → the attempt is spent.
    d. Push (`git push`, `-C <worktree>` when set). The branch is a story branch, so the gate hook allows this at `PR_OPENED` (standalone) or `AUTO_FIX` (inside a `--bypass` tail).
-   e. Dispatch `pr-reviewer` **fresh** against the updated PR — full pass, not a delta check (works from the PR diff via `gh`, so it needs no worktree qualifier).
-      - **Clean** (`APPROVE`, no BLOCKING/MAJOR) → verdict `FIXED_CLEAN`, exit loop.
-      - **Findings remain** → re-triage them (step 3). New FIX items and budget left → next attempt. Otherwise → verdict `ESCALATE` with the residuals.
+   e. Dispatch `pr-reviewer` **fresh** against the updated PR — full pass, not a delta check (works from the PR diff via `gh`, so it needs no worktree qualifier). **When `review` is set** (this run's own `--review`, or inherited from the caller), also run `/code-review <PR#>` fresh in the same step, at the same low/medium effort as step 1 — the convergence check has to re-verify everything the original findings could have come from, not just the half `pr-reviewer` covers.
+      - **Clean** — `pr-reviewer` returns `APPROVE` with no BLOCKING/MAJOR, **and** (when `review` is set) `/code-review` surfaces nothing new at that effort → verdict `FIXED_CLEAN`, exit loop.
+      - **Findings remain** (from either pass) → merge them and re-triage (step 3), tagged by source as before. New FIX items and budget left → next attempt. Otherwise → verdict `ESCALATE` with the residuals.
 
 5. **Report.** Post one PR comment as the audit trail: findings fixed (with commit SHAs), findings escalated (with the assessor's reasoning), verdict, attempts used. In chat: the same, led by the verdict; escalated items framed as the decisions the developer now owns. Restore the original branch if step 4a switched it in the current checkout (nothing to restore when operating in a recorded `worktree` — the session's own branch was never touched). Write the stats snapshot (and publish the Artifact if `--show-stats`).
 
@@ -82,5 +83,6 @@ The table below is the `high`-tier default — what every agent's own frontmatte
 - Never force-pushes; fix commits append to the branch history the reviewers already saw.
 - Every subagent ends with a single JSON block; unparseable → re-dispatch once, then treat that stage as failed and escalate — never guess.
 - Dispatch names: `assessor`, `coder`, `validator`, `pr-reviewer` (plugin-qualified `sdlc:<name>` on collision).
+- **`/code-review` (under `review`) is a Claude Code skill, not one of this plugin's own subagents.** Invoked via the Skill tool (steps 1 and 4e), not the Task tool — it's read-only here (findings only, nothing applied), and its own internal effort/model choices are independent of `skills/model-effort/SKILL.md`'s `effort` tier, which only governs this plugin's own agents.
 - **No `--worktree`/`--no-worktree` flags here** — this command never creates or targets a worktree itself, since it always operates on a PR/branch that already exists. It only looks one up (Step 2) from the story's own `story-state.json` and, when present, works inside it.
 - See `skills/model-effort/SKILL.md` for the full model-tier table and resolution, and `skills/worktree-mode/SKILL.md` for the full worktree resolution/fallback/recovery logic — this file only describes how review-fix *uses* each.
