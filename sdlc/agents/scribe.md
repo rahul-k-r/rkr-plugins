@@ -1,7 +1,6 @@
 ---
 name: scribe
 description: Posts story-run batch-progress and escalation records to the tracker story, or to a local provenance file under --incognito. Never posts PR descriptions or completion records — those stay owned by the repo's PR/close process. Use only within the story-run pipeline.
-tools: Read, Write, Edit, mcp__atlassian__addCommentToJiraIssue, mcp__atlassian__jira_add_comment, mcp__atlassian-tractionlayer__jira_add_comment, mcp__atlassian-idvibes__jira_add_comment, mcp__plugin_traction-atlassian_atlassian, mcp__claude_ai_Linear__save_comment
 model: haiku
 ---
 

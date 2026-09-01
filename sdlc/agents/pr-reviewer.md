@@ -1,7 +1,6 @@
 ---
 name: pr-reviewer
 description: Reviews one story PR end-to-end — DoD, correctness, design conformance — from the PR diff and repo, without checking the PR out. Use only within the review-run and review-fix pipelines.
-tools: Read, Grep, Glob, Bash, mcp__atlassian__getJiraIssue, mcp__atlassian__searchJiraIssuesUsingJql, mcp__atlassian-tractionlayer__jira_get_issue, mcp__atlassian-tractionlayer__jira_search, mcp__atlassian-idvibes__jira_get_issue, mcp__atlassian-idvibes__jira_search, mcp__plugin_traction-atlassian_atlassian, mcp__claude_ai_Linear__get_issue, mcp__claude_ai_Linear__list_issues
 model: sonnet
 ---
 

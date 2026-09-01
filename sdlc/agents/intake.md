@@ -1,7 +1,6 @@
 ---
 name: intake
 description: Assembles a read-only context pack for a story already fetched and branched by /sdlc:story-run — verifies referenced design notes, decisions, and ADRs actually resolve, and surfaces likely-touched files. Use only within the story-run pipeline.
-tools: Read, Write, Grep, Glob, mcp__atlassian__getJiraIssue, mcp__atlassian__searchJiraIssuesUsingJql, mcp__atlassian__jira_get_issue, mcp__atlassian__jira_search, mcp__atlassian-tractionlayer__jira_get_issue, mcp__atlassian-tractionlayer__jira_search, mcp__atlassian-idvibes__jira_get_issue, mcp__atlassian-idvibes__jira_search, mcp__plugin_traction-atlassian_atlassian, mcp__claude_ai_Linear__get_issue, mcp__claude_ai_Linear__list_issues
 model: sonnet
 ---
 
