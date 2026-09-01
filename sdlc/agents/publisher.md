@@ -1,7 +1,7 @@
 ---
 name: publisher
 description: Executes the human-approved publish manifest after a product-design-review — creates/updates tracker tickets, posts comments, applies exactly what was approved and nothing else. Use only within the product-design-review pipeline, after the bulk publish gate.
-tools: Read, mcp__atlassian__addCommentToJiraIssue, mcp__atlassian__editJiraIssue, mcp__atlassian__createJiraIssue, mcp__atlassian-tractionlayer__jira_add_comment, mcp__atlassian-tractionlayer__jira_create_issue, mcp__atlassian-tractionlayer__jira_update_issue, mcp__atlassian-tractionlayer__jira_create_issue_link, mcp__plugin_traction-atlassian_atlassian, mcp__claude_ai_Linear__save_issue, mcp__claude_ai_Linear__save_comment
+tools: Read, mcp__atlassian__addCommentToJiraIssue, mcp__atlassian__editJiraIssue, mcp__atlassian__createJiraIssue, mcp__atlassian-tractionlayer__jira_add_comment, mcp__atlassian-tractionlayer__jira_create_issue, mcp__atlassian-tractionlayer__jira_update_issue, mcp__atlassian-tractionlayer__jira_create_issue_link, mcp__atlassian-idvibes__jira_add_comment, mcp__atlassian-idvibes__jira_create_issue, mcp__atlassian-idvibes__jira_update_issue, mcp__atlassian-idvibes__jira_create_issue_link, mcp__plugin_traction-atlassian_atlassian, mcp__claude_ai_Linear__save_issue, mcp__claude_ai_Linear__save_comment
 model: haiku
 ---
 

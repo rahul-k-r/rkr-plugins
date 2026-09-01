@@ -11,12 +11,21 @@ Every `sdlc` command/agent that touches a ticket does so through this file — n
 
 1. **Read `.sdlc/config.json`** at the repo root (created/updated by `/sdlc:init`): `{ "tracker": "jira"|"linear"|"none", "trackerProjectKey": "..." }`. If present, this wins — stop here.
 2. **Else, detect which MCP tool family is registered this session:**
-   - Jira: any of `mcp__atlassian__*`, `mcp__atlassian-tractionlayer__*`, `mcp__plugin_traction-atlassian_atlassian__*`.
+   - Jira: any of `mcp__atlassian__*`, `mcp__atlassian-tractionlayer__*`, `mcp__atlassian-idvibes__*`, `mcp__plugin_traction-atlassian_atlassian__*`.
    - Linear: `mcp__claude_ai_Linear__*` (or an equivalent `mcp__*linear*` server).
    - Exactly one family present → use it, and offer to persist the choice to `.sdlc/config.json` (don't write without asking — the developer may be trying it out, or working across repos with different trackers in one session).
    - Both present → ask which one this repo uses.
    - Neither present → `tracker: none`.
 3. **`tracker: none` is a legitimate, fully-supported mode** — not an error state. No command that only reads or reports should ever be unusable for lack of a tracker. See **`tracker: none` / manual fallback** below.
+
+## Registering a new Jira MCP server name
+
+MCP server names are chosen per-project (whatever `.mcp.json`/`claude mcp add` calls it) — there is no way around enumerating them: Claude Code's subagent `tools:` frontmatter only supports a trailing wildcard after an *exact* server name (`mcp__atlassian-idvibes__*`), never a partial/glob match across server-name variants (confirmed against the platform, not inferred). So the first time a repo connects a Jira MCP server under a name not already known here, two places need the new name added — both enumerate exact tool names, not just the server prefix:
+
+1. **This file** — add the new `mcp__<name>__*` family to the detection list above.
+2. **Every agent file that touches Jira** (`agents/intake.md`, `agents/pr-reviewer.md`, `agents/surveyor.md`, `agents/verifier.md`, `agents/publisher.md`, `agents/scribe.md`) — add `mcp__<name>__<tool>` for each Jira tool suffix that agent already lists for `mcp__atlassian-tractionlayer__*` (same suffixes, new prefix — the underlying `mcp-atlassian` server exposes identical tool names regardless of what it's registered as).
+
+Known variants so far: `atlassian` (generic/Anthropic-hosted), `atlassian-tractionlayer` (Traction Layer's `mcp-atlassian` instance), `atlassian-idvibes` (id-vibes' `mcp-atlassian` instance), `plugin_traction-atlassian_atlassian` (the `traction-atlassian` plugin's bundled server).
 
 A repo can also have a real ticket *readable* (a GitHub issue, e.g.) with no Jira/Linear behind it. That's orthogonal to `tracker` — see **Reads vs. writes** below; a GitHub issue is a legitimate read source regardless of what `tracker` resolves to.
 

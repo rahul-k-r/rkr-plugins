@@ -9,7 +9,7 @@
     {
       "name": "sdlc",
       "source": "./sdlc",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "description": "Personal story SDLC: design-review gate, full story lifecycle, and autonomous story-run/design-run/review-run pipelines plus product-design-review. Tracker-agnostic (Jira/Linear/none, resolved per repo), solo-dev aware (direct-to-main branch model, --incognito local-only mode for contributing to repos you don't own), configurable per-agent model tiers, worktree-isolated story execution, and optional local-only design docs."
     }
   ]

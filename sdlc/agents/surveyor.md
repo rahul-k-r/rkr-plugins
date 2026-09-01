@@ -1,7 +1,7 @@
 ---
 name: surveyor
 description: Ingests one slice of the product corpus (an epic + its stories + matching spec/TDD sections) and produces a digest plus traceability rows. Use only within the product-design-review pipeline.
-tools: Read, Grep, Glob, mcp__atlassian__getJiraIssue, mcp__atlassian__searchJiraIssuesUsingJql, mcp__atlassian-tractionlayer__jira_get_issue, mcp__atlassian-tractionlayer__jira_search, mcp__plugin_traction-atlassian_atlassian, mcp__claude_ai_Linear__get_issue, mcp__claude_ai_Linear__list_issues
+tools: Read, Grep, Glob, mcp__atlassian__getJiraIssue, mcp__atlassian__searchJiraIssuesUsingJql, mcp__atlassian-tractionlayer__jira_get_issue, mcp__atlassian-tractionlayer__jira_search, mcp__atlassian-idvibes__jira_get_issue, mcp__atlassian-idvibes__jira_search, mcp__plugin_traction-atlassian_atlassian, mcp__claude_ai_Linear__get_issue, mcp__claude_ai_Linear__list_issues
 model: sonnet
 ---
 
