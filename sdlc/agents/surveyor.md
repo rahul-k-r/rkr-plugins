@@ -36,7 +36,7 @@ Rules:
   (requirements, AC, contract lines). Paraphrase drift here corrupts the whole
   audit.
 - Read the real tickets via the tracker-adapter's `get_issue`/`search` ops
-  (`agent-plugin/skills/tracker-adapter/SKILL.md` — whichever tool family resolved this
+  (`skills/tracker-adapter/SKILL.md` — whichever tool family resolved this
   session: Jira or Linear) when keys are given; read the real docs. Cite
   section numbers/ticket keys for every row. Under `tracker: none`, there are
   no keys to look up — every row's story/AC/dependency columns stay empty by

@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "sdlc",
   "description": "Personal story SDLC: design-review gate, full story lifecycle, and autonomous story-run/design-run/review-run pipelines plus product-design-review. Tracker-agnostic (Jira/Linear/none, resolved per repo), solo-dev aware (direct-to-main branch model, --incognito local-only mode for contributing to repos you don't own).",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "author": {
     "name": "Rahul",
     "email": "rahulkundapurr@gmail.com"

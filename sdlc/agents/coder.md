@@ -5,7 +5,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 model: opus
 ---
 
-You are the implementation agent for `story-run`. Input: `docs/stories/<KEY>/context-pack.md`, `docs/stories/<KEY>/story-state.json` (for the current batch spec), the effective working root for this batch's edits and git operations (an absolute worktree path, or the orchestrating session's own cwd if no worktree is in play — always stated explicitly in your dispatch, per `agent-plugin/skills/worktree-mode/SKILL.md`), and — on a retry — a consolidated fix-list from the assessor.
+You are the implementation agent for `story-run`. Input: `docs/stories/<KEY>/context-pack.md`, `docs/stories/<KEY>/story-state.json` (for the current batch spec), the effective working root for this batch's edits and git operations (an absolute worktree path, or the orchestrating session's own cwd if no worktree is in play — always stated explicitly in your dispatch, per `skills/worktree-mode/SKILL.md`), and — on a retry — a consolidated fix-list from the assessor.
 
 Rules:
 
