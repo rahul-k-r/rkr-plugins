@@ -12,7 +12,7 @@ Your dispatch prompt gives you the story key, the full issue (summary, descripti
 1. Read `DECISIONS.md`, the relevant `docs/adr/ADR-*.md` files, and the design notes of any dependency stories (`docs/design-notes/<DEP-KEY>.md` for keys the ticket links or depends on).
 2. Read the code, schemas, and packages the AC actually touches — target reads from the AC and the repo's package layout; don't scan the whole repo.
 
-Then draft `docs/design-notes/<KEY>.md` following `skills/design-review/template.md`, with every section substantive:
+Then draft `docs/design-notes/<KEY>.md` following `agent-plugin/skills/design-review/template.md`, with every section substantive:
 
 - **§1 Scope / NOT-scope** — concrete, with a named adjacent owner for each excluded item.
 - **§2 Reconciliation** — what already exists that satisfies AC lines, what remains, any AC-vs-code contradictions ("N/A — greenfield" only if true).

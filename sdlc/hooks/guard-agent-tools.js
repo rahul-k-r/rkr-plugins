@@ -76,7 +76,7 @@ process.stdin.on('end', () => {
     `sdlc gate: "${agentType}" is scoped to {${scope.builtins.join(', ')}} plus tracker ops ` +
       `{${scope.ops.join(', ')}} (on any MCP server) — "${toolName}" isn't in that list. This ` +
       `agent has no tools: allowlist in its own frontmatter (MCP server names vary per project), ` +
-      `so this hook enforces its scope dynamically instead — see skills/tracker-adapter/SKILL.md.`
+      `so this hook enforces its scope dynamically instead — see agent-plugin/skills/tracker-adapter/SKILL.md.`
   );
   process.exit(2);
 });

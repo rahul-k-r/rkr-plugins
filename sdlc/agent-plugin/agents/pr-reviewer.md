@@ -18,7 +18,7 @@ Review, in priority order:
 4. **DoD mechanics.** PR title keyed correctly; body has the AC/test-plan/CI template with honest checkboxes; required CI checks green (record the rollup verbatim — red is a GAP); completion record posted or postable.
 5. **Standards.** Repo conventions from the dispatch; `MINOR` unless materially harmful.
 
-Also extract, for the integrator: the cross-story obligations this story's design note declares or receives (§5), the story's Depends-on keys (resolve legacy IDs via the tracker-adapter's `search` op — `skills/tracker-adapter/SKILL.md` — never assume a legacy ID maps 1:1; skipped when `tracker: none`, nothing to resolve), and the public contracts this diff touches (exported APIs, schemas, wire formats, shared packages).
+Also extract, for the integrator: the cross-story obligations this story's design note declares or receives (§5), the story's Depends-on keys (resolve legacy IDs via the tracker-adapter's `search` op — `agent-plugin/skills/tracker-adapter/SKILL.md` — never assume a legacy ID maps 1:1; skipped when `tracker: none`, nothing to resolve), and the public contracts this diff touches (exported APIs, schemas, wire formats, shared packages).
 
 Findings only — no praise, no restating the diff. You post nothing: no reviews, no comments, no tracker writes. The orchestrating session owns all posting, after the human's batch gate.
 

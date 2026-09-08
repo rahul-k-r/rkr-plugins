@@ -40,7 +40,7 @@ INVENTORY → FLOW SWEEP → DELIBERATE → VERIFY+SYNTHESIZE ⇒ SESSIONS (huma
   BLOCKER/GAP-grade issues; `exhaustive` = every flow × every variant, full
   panel width, second verify pass.
 - `--effort <tier>` — override `.sdlc/config.json`'s `effort` for this
-  run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/
+  run only, per `agent-plugin/skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/
   `high`/`extra-high`). Omitted → the config's `effort`, or `high` if
   that's unset too. Only meaningful on the initial autonomous-phase
   invocation — resolved once at Preflight (Step 0) and read back on
@@ -70,7 +70,7 @@ partitions: <optional; default PM,ENG,UX,CROSS — an engine repo may collapse t
 **Tracker project/team scope.** The ticket tree's project (Jira) or team
 (Linear) scope comes from `.sdlc/config.json`'s `trackerProjectKey` when set
 (Jira: project key; Linear: team key) — falling back to asking once if it
-isn't. See `skills/tracker-adapter/SKILL.md` for the full resolution logic;
+isn't. See `agent-plugin/skills/tracker-adapter/SKILL.md` for the full resolution logic;
 `tracker: none` means there is no ticket tree at all (see Step 0 below).
 
 Missing spec is not fatal: the audit runs with requirements sourced from the
@@ -80,12 +80,12 @@ without one). Missing archetype: ask once, then record it into `CLAUDE.md`.
 
 ## Steps — autonomous phases (A–D)
 
-0. **Preflight.** Resolve the tracker per `skills/tracker-adapter/SKILL.md`
+0. **Preflight.** Resolve the tracker per `agent-plugin/skills/tracker-adapter/SKILL.md`
    (`.sdlc/config.json`, or detect the registered MCP family and ask); config
    resolved and inputs exist; `docs/product-design-review/<run-id>/` created
    (`run-id` = date + short slug); `run-state.json` initialized (untracked
    working state, story-run rules). **Resolve `effort`** per
-   `skills/model-effort/SKILL.md`: `--effort <tier>` if passed, else
+   `agent-plugin/skills/model-effort/SKILL.md`: `--effort <tier>` if passed, else
    `.sdlc/config.json`'s `effort`, else `high` — recorded in
    `run-state.json` and read back (not re-resolved) on `--resume`. Every
    `surveyor`/`cartographer`/`flow-tracer`/`moderator`/`verifier`/`publisher`/
@@ -169,7 +169,7 @@ without one). Missing archetype: ask once, then record it into `CLAUDE.md`.
 ## Steps — human phases
 
 5. **SESSIONS** (`--session <partition>`). Follow
-   `skills/product-design-review/session-protocol.md` exactly. In brief: open with a
+   `agent-plugin/skills/product-design-review/session-protocol.md` exactly. In brief: open with a
    cross-partition brief (what other partitions decided that touches your
    items), then walk the partition's docket in severity order, one issue per
    turn — finding, evidence quotes, panel positions with dissents, verifier
@@ -208,7 +208,7 @@ never re-run). Sessions resume mid-docket, per partition, in any chat.
 
 ## Model tiering
 
-The table below is the `high`-tier default — what every agent's own frontmatter already declares, and what a repo with no `effort` configured runs at. For every other tier (`very-low`/`low`/`medium`/`extra-high`), see `skills/model-effort/SKILL.md`'s table — this run resolves `effort` once at Preflight (Step 0) and passes an explicit `model` override on every dispatch below looked up from there, superseding the agent file's own default without editing it.
+The table below is the `high`-tier default — what every agent's own frontmatter already declares, and what a repo with no `effort` configured runs at. For every other tier (`very-low`/`low`/`medium`/`extra-high`), see `agent-plugin/skills/model-effort/SKILL.md`'s table — this run resolves `effort` once at Preflight (Step 0) and passes an explicit `model` override on every dispatch below looked up from there, superseding the agent file's own default without editing it.
 
 | Agent | Model | Why |
 |-------|-------|-----|

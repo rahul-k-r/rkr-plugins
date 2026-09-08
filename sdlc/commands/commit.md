@@ -11,13 +11,13 @@ Arguments arrive as `$ARGUMENTS`: `$1` is an optional story key, the rest an opt
 
 - No key given: derive it from the branch name (`feat/<key-lower>-slug` → `<KEY>`). If it can't be derived, ask.
 - No message given: write one from the staged diff.
-- Reference stories only by their live tracker key, resolved from the tracker (`skills/tracker-adapter/SKILL.md`) — never infer or guess. If the repo documents a legacy ticket-ID scheme, translate to the live key first. A local key (no tracker configured) needs no resolution — it's used as-is.
+- Reference stories only by their live tracker key, resolved from the tracker (`agent-plugin/skills/tracker-adapter/SKILL.md`) — never infer or guess. If the repo documents a legacy ticket-ID scheme, translate to the live key first. A local key (no tracker configured) needs no resolution — it's used as-is.
 
 ## Steps
 
 1. **Resolve the repo convention** from the target repo's `CLAUDE.md`: project key, branch naming, commit-subject format (default: subject `<KEY>: <imperative summary>`).
 
-1a. **Resolve the worktree, if any.** Check `docs/stories/<KEY>/story-state.json` for a `worktree` field, using the key from `$1` or as derived above (per `skills/worktree-mode/SKILL.md`) — the file may not exist (this story never went through `/sdlc:story-start`'s worktree creation), in which case there's nothing to resolve and everything below runs in the current checkout exactly as before. When it resolves to a path, every git command in this procedure (`rev-parse`, `status`, `diff`, `add`, `commit`) targets it via `git -C <worktree>` instead of the session's own checkout.
+1a. **Resolve the worktree, if any.** Check `docs/stories/<KEY>/story-state.json` for a `worktree` field, using the key from `$1` or as derived above (per `agent-plugin/skills/worktree-mode/SKILL.md`) — the file may not exist (this story never went through `/sdlc:story-start`'s worktree creation), in which case there's nothing to resolve and everything below runs in the current checkout exactly as before. When it resolves to a path, every git command in this procedure (`rev-parse`, `status`, `diff`, `add`, `commit`) targets it via `git -C <worktree>` instead of the session's own checkout.
 
 2. **Confirm the branch.** Run `git rev-parse --abbrev-ref HEAD` (`-C <worktree>` when resolved above). If on `main` or a `sprint/*` branch, **stop** — never commit directly to either. Offer to cut a story branch first — from the base branch (`main` under `branchModel: direct`, the active sprint branch under `branchModel: sprint` — read `.sdlc/config.json`): `feat/<key-lower>-slug`, `fix/<key-lower>-slug`, or `chore/<key-lower>-slug` (new functionality / bug fix / tooling+hygiene).
 

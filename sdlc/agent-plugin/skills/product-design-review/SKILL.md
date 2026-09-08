@@ -134,7 +134,7 @@ scored 1, CRITICAL"). This turns severity arguments into rubric lookups.
 | **Default partitions** | PM, ENG, UX, CROSS | ENG, PM, CROSS | ENG, PM, CROSS (+UX if it has a console) |
 | **Lens emphasis** | UX/ease-of-use, product/stakeholder-value always in rotation | performance/scale, implementation-feasibility weighted up | security/data-boundary, architecture/technology weighted up |
 
-The full product lens set lives in `agents/panelist.md` (story-level three +
+The full product lens set lives in `agent-plugin/agents/panelist.md` (story-level three +
 product-level five). The moderator assigns 3 lenses per paneled issue.
 
 ## Finding schema (`findings.json`)
@@ -172,7 +172,7 @@ no unresolved BLOCKER/GAP."
 
 The `create-ticket`/`update-ac`/`comment`/`link` ops map 1:1 onto the
 tracker-adapter's `create_issue`/`update_field`/`add_comment`/`create_link`
-ops (`skills/tracker-adapter/SKILL.md`) and are executed by `publisher`
+ops (`agent-plugin/skills/tracker-adapter/SKILL.md`) and are executed by `publisher`
 against whichever tracker resolved for the repo (Jira or Linear — see that
 file for the exact tool mapping, including the `link`→comment fallback on
 Linear). `doc-change` entries (TDD amendments, DECISIONS entries, ADR

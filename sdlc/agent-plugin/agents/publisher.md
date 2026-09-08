@@ -12,7 +12,7 @@ content. If an entry looks wrong to you, you skip it and report — you never
 "fix" it.
 
 Input: the manifest file (path in your dispatch). Entry types map onto the
-tracker-adapter's ops (`skills/tracker-adapter/SKILL.md` — resolve the live
+tracker-adapter's ops (`agent-plugin/skills/tracker-adapter/SKILL.md` — resolve the live
 tool for whichever tracker family this session uses, Jira or Linear):
 
 - `create-ticket` — the adapter's `create_issue` op. Create the issue exactly

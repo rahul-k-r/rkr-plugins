@@ -13,7 +13,7 @@ Arguments arrive as `$ARGUMENTS`: `$1` is an optional sprint id, resolved as `sp
 
 ## Output style (`--technical`)
 
-`--technical` (anywhere in `$ARGUMENTS`) keeps chat output in the engineer-level voice. Without it (the default), everything explained to the developer — sprint readiness, any story flagged as not Done, why reconciliation with `main` is needed, and the pending gate — follows `skills/plain-language/STANDARD.md`; the PR title/body keep their fixed template in both modes.
+`--technical` (anywhere in `$ARGUMENTS`) keeps chat output in the engineer-level voice. Without it (the default), everything explained to the developer — sprint readiness, any story flagged as not Done, why reconciliation with `main` is needed, and the pending gate — follows `agent-plugin/skills/plain-language/STANDARD.md`; the PR title/body keep their fixed template in both modes.
 
 ## Steps
 
@@ -22,7 +22,7 @@ Arguments arrive as `$ARGUMENTS`: `$1` is an optional sprint id, resolved as `sp
 1. **Resolve the sprint branch** and confirm it exists on origin.
 
 2. **Confirm the sprint is ready to land.** The sprint→main merge should bundle finished work, not work-in-progress:
-   - List the stories merged into the sprint branch (from merge commits / the tracker's sprint or cycle board — `skills/tracker-adapter/SKILL.md`) with their keys.
+   - List the stories merged into the sprint branch (from merge commits / the tracker's sprint or cycle board — `agent-plugin/skills/tracker-adapter/SKILL.md`) with their keys.
    - Confirm each is **Done** in the tracker (or explicitly call out any intentionally-included-but-not-Done item). A story still In Progress shouldn't ride to `main` silently — flag it and let the user decide (hold it, or descope it out of this merge).
 
 3. **Sync and reconcile with `main`.** `git fetch origin`. If `main` has advanced since the sprint branch was cut, merge `main` into `sprint/<id>` first and resolve conflicts there — so the PR diff is clean and CI runs against the real post-merge state. Never resolve sprint-vs-main conflicts inside the PR merge itself.
@@ -72,4 +72,4 @@ When the sprint→main PR already exists and you're making a follow-up change (r
 - No self-approval, ever, on this PR — that's the whole point of moving the review here.
 - The title spans the sprint, so it carries no single tracker key; tracker links happen via the per-story PRs already merged into the branch.
 - `gh` resolves the repo from the remote — no machine-specific paths. If `gh` isn't authenticated, stop and tell the user to run `gh auth login`.
-- This command only ever runs under `branchModel: sprint` (Step 0 stops it otherwise), but stays tracker-generic like every other command — a `sprint`-model repo can still use Jira, Linear, or no tracker at all; see `skills/tracker-adapter/SKILL.md`.
+- This command only ever runs under `branchModel: sprint` (Step 0 stops it otherwise), but stays tracker-generic like every other command — a `sprint`-model repo can still use Jira, Linear, or no tracker at all; see `agent-plugin/skills/tracker-adapter/SKILL.md`.
