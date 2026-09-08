@@ -1,11 +1,30 @@
 {
   "name": "sdlc",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Personal story SDLC: design-review gate, full story lifecycle, and autonomous story-run/design-run/review-run pipelines plus product-design-review. Tracker-agnostic (Jira/Linear/none, resolved per repo), solo-dev aware (direct-to-main branch model, --incognito local-only mode for contributing to repos you don't own), configurable per-agent model tiers, worktree-isolated story execution, and optional local-only design docs.",
   "author": {
     "name": "Rahul",
     "email": "rahulkundapurr@gmail.com"
   },
   "skills": "./agent-plugin/skills/",
-  "agents": "./agent-plugin/agents/"
+  "agents": [
+    "./agent-plugin/agents/architect.md",
+    "./agent-plugin/agents/assessor.md",
+    "./agent-plugin/agents/cartographer.md",
+    "./agent-plugin/agents/coder.md",
+    "./agent-plugin/agents/designer.md",
+    "./agent-plugin/agents/flow-tracer.md",
+    "./agent-plugin/agents/intake.md",
+    "./agent-plugin/agents/integrator.md",
+    "./agent-plugin/agents/moderator.md",
+    "./agent-plugin/agents/panelist.md",
+    "./agent-plugin/agents/planner.md",
+    "./agent-plugin/agents/pr-reviewer.md",
+    "./agent-plugin/agents/publisher.md",
+    "./agent-plugin/agents/reviewer.md",
+    "./agent-plugin/agents/scribe.md",
+    "./agent-plugin/agents/surveyor.md",
+    "./agent-plugin/agents/validator.md",
+    "./agent-plugin/agents/verifier.md"
+  ]
 }
