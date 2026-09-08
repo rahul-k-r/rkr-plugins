@@ -4,12 +4,25 @@
 //   1. Deny `git commit` directly on main/master, or a sprint/* branch when
 //      this repo's branch model is `sprint` — except merge-resolution
 //      commits while a merge is in progress (MERGE_HEAD present), e.g.
-//      reconciling main into the sprint branch.
+//      reconciling main into the sprint branch; and except a RELEASE commit
+//      (see below).
 //   2. Deny force-pushes targeting a protected branch (same set as #1).
 //   3. On a branch managed by a story-run story-state.json, deny
 //      `git push` / `gh pr create` before phase READY_FOR_PR / PR_OPENED.
 //      AUTO_FIX (the --bypass tail's review-fix loop) also pushes legally —
 //      it appends reviewed fix commits to an already-open PR.
+//
+// Release-commit exception: some repos document a standing convention that
+// the release commit (a changelog-heading rename plus a version bump, e.g.)
+// lands directly on main — no branch, no PR, by design (a PR for a two-file
+// version bump is pointless ceremony, and blocking it silently pushes an
+// agent toward opening one anyway, which is worse). Since the files that
+// make up "a release commit" are different in every repo (CHANGELOG.md +
+// a .csproj here, package.json elsewhere...), this isn't something the
+// plugin can know — it's opt-in via `.sdlc/config.json`'s
+// `releaseCommitPaths` (an array of repo-relative paths). When set, a
+// direct commit on a protected branch is allowed if every staged file is
+// in that list. Unset (the default) — no exception, unchanged behavior.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -29,6 +42,36 @@ function branchModel(root) {
 
 const protectedBranch = (b, model) =>
   b === 'main' || b === 'master' || (model === 'sprint' && /^sprint\//.test(b));
+
+// True only when `releaseCommitPaths` is configured AND every file staged for
+// this commit is in that list. Fails closed (false) on any missing config,
+// unreadable git state, or empty staging area — never widens the gate by
+// accident.
+function isReleaseCommit(root, cwd) {
+  let allow;
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(root, '.sdlc', 'config.json'), 'utf8'));
+    allow = Array.isArray(cfg.releaseCommitPaths) ? cfg.releaseCommitPaths : null;
+  } catch {
+    return false;
+  }
+  if (!allow || allow.length === 0) return false;
+
+  let staged;
+  try {
+    staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+  } catch {
+    return false;
+  }
+  return staged.length > 0 && staged.every((f) => allow.includes(f));
+}
 
 let input = '';
 process.stdin.on('data', (d) => (input += d));
@@ -83,11 +126,17 @@ process.stdin.on('end', () => {
     process.exit(2);
   };
 
-  if (isCommit && protectedBranch(branch, model) && !fs.existsSync(path.join(gitDir, 'MERGE_HEAD'))) {
+  if (
+    isCommit &&
+    protectedBranch(branch, model) &&
+    !fs.existsSync(path.join(gitDir, 'MERGE_HEAD')) &&
+    !isReleaseCommit(root, cwd)
+  ) {
     deny(
       `refusing to commit directly on "${branch}". Cut a story branch first ` +
         `(feat|fix|chore/<key-lower>-slug) — see /sdlc:story-start or /sdlc:commit. ` +
-        `(Merge-resolution commits during an in-progress merge are allowed.)`
+        `(Merge-resolution commits during an in-progress merge are allowed, and so is a release ` +
+        `commit whose staged files are all covered by .sdlc/config.json's "releaseCommitPaths".)`
     );
   }
 

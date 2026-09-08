@@ -40,6 +40,11 @@ argument-hint: "(no arguments)"
    }
    ```
 
+   Not asked here — an advanced, opt-in field a developer adds by hand later if their repo has a
+   documented release-commit convention (e.g. a changelog rename + version bump, landed directly on
+   a protected branch with no PR): `"releaseCommitPaths": ["CHANGELOG.md", "path/to/Version.file"]`.
+   See `hooks/gate-git.js`'s top comment for exactly what it does.
+
 6. **If `localDocs: true` was just chosen (or already was), ensure `docs/design-notes/.gitignore` and `docs/adr/.gitignore` exist**, each containing a bare `*` — the same reinforcement `skills/local-docs/SKILL.md` describes, applied immediately rather than waiting for the first story to need it. Skip under `localDocs: false`.
 
 7. **Report.** Print a summary of actions taken (created / skipped / updated for each path, including the config). No commits — the user decides when to commit the scaffolding.
