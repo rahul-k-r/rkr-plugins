@@ -70,3 +70,51 @@ plugin install can do on its own. Options, not yet decided:
 
 No decision made yet — this file exists so the investigation itself isn't lost, and so whichever
 option gets picked later has the actual evidence behind it, not a re-guess.
+
+## `agents/*.md` does not power `invoke_subagent` dispatch
+
+Tested end-to-end with real reproduced errors, not inferred:
+
+- A plugin's `agents/*.md` files register names into a **different namespace** — top-level,
+  primary-session personas, selectable via `agy --agent <name>` or the IDE's persona picker. This
+  is confirmed real and useful on its own (`agy plugin validate` reports `agents: 1 processed`
+  for a plugin carrying one), but it is **not** what `invoke_subagent` consults.
+- `invoke_subagent`'s `TypeName` only accepts `"self"`, `"research"`, or a type registered at
+  runtime via `define_subagent` in the *same session*. Calling it with `TypeName: "designer"`
+  (matching `agents/designer.md`) fails:
+  ```
+  Encountered error in tool execution: subagent "designer" not found or not allowed to be invoked
+  ```
+  Trying to register it dynamically instead (`define_subagent(name="designer")`) *also* fails —
+  differently, revealing the name is reserved by the top-level-persona registration but still
+  unusable for subagent dispatch:
+  ```
+  Encountered error in tool execution: agent "designer" already exists, please use a different name
+  ```
+
+**Practical consequence: no `TypeName` can reference `agents/<name>.md` by name for a
+dispatched subagent, ever — for one dispatch or a hundred.** The confirmed, working pattern
+instead: `TypeName: "self"` (full inherited toolset) or `TypeName: "research"` (read-only), with
+the target agent's entire persona — its full `agents/<name>.md` content — **injected directly
+into the `Prompt` field**, concatenated with the specific per-dispatch task. `sdlc/agents/*.md`
+stays the single source of truth for that content (an Antigravity-side dispatch reads the file
+and includes it verbatim in `Prompt`, rather than a second copy existing anywhere) — it's the
+*reference mechanism* that differs from Claude Code, not the content.
+
+### This also closes off "Option 2" above, not just narrows it
+
+The hooks section above offered "rely on each subagent's own `tools`/`disallowedTools`
+frontmatter for scoping" as a fallback if hook-based enforcement stays unavailable. **That
+fallback doesn't exist either, for the same underlying reason**: `invoke_subagent`'s confirmed
+schema (`TypeName`, `Role`, `Model`, `Prompt`, `Workspace`) has no per-dispatch tool-allowlist
+field at all — only the binary `"self"` (everything) / `"research"` (read-only) choice built
+into `TypeName` itself. Claude Code's fine-grained per-agent `tools:`/`disallowedTools:`
+frontmatter has no Antigravity dispatch-time equivalent to fall back to.
+
+**Net effect, combined with the hooks finding above:** as of 2026-09-08, an Antigravity-dispatched
+subagent gets either full tool inheritance or a fixed read-only set — nothing in between, and no
+hook currently intercepts what it does with that access unless the global config is manually
+edited. The elaborate per-role, per-operation scoping `guard-agent-tools.js` gives Claude Code
+(built specifically to avoid hardcoding MCP server names — see `skills/tracker-adapter/SKILL.md`)
+has no current Antigravity equivalent. This is a real, load-bearing gap to be upfront about, not
+something to paper over with a weaker-but-still-real substitute — there currently isn't one.
