@@ -34,18 +34,15 @@ const FULL_WRITE_OPS = [
   'jira_create_issue_link',
   'save_issue',
 ];
-// Fixed plugin-bundled tool name — never varies per project (it's not a
-// user-chosen server name), so it's a plain exact entry rather than
-// something this hook needs to generalize.
-const OMNIBUS_TOOL = 'mcp__plugin_traction-atlassian_atlassian';
-
+// ToolSearch is how deferred MCP tools (tracker ops included) get loaded, so
+// every scoped agent needs it or it can't reach the ops it's allowed.
 const AGENT_SCOPE = {
-  intake: { builtins: ['Read', 'Write', 'Grep', 'Glob'], ops: READ_OPS },
-  'pr-reviewer': { builtins: ['Read', 'Grep', 'Glob', 'Bash'], ops: READ_OPS },
-  surveyor: { builtins: ['Read', 'Grep', 'Glob'], ops: READ_OPS },
-  verifier: { builtins: ['Read', 'Grep', 'Glob'], ops: READ_OPS },
-  publisher: { builtins: ['Read'], ops: FULL_WRITE_OPS },
-  scribe: { builtins: ['Read', 'Write', 'Edit'], ops: COMMENT_OPS },
+  intake: { builtins: ['Read', 'Write', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
+  'pr-reviewer': { builtins: ['Read', 'Grep', 'Glob', 'Bash', 'ToolSearch'], ops: READ_OPS },
+  surveyor: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
+  verifier: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
+  publisher: { builtins: ['Read', 'ToolSearch'], ops: FULL_WRITE_OPS },
+  scribe: { builtins: ['Read', 'Write', 'Edit', 'ToolSearch'], ops: COMMENT_OPS },
 };
 
 let input = '';
@@ -58,13 +55,13 @@ process.stdin.on('end', () => {
     process.exit(0); // unparseable — don't block unrelated work
   }
 
-  const agentType = payload.agent_type;
+  // Plugin agents arrive plugin-qualified (`sdlc:scribe`); the table is keyed bare.
+  const agentType = (payload.agent_type || '').split(':').pop();
   const scope = agentType && AGENT_SCOPE[agentType];
   if (!scope) process.exit(0); // orchestrator, or an agent this hook doesn't govern
 
   const toolName = payload.tool_name || '';
   if (scope.builtins.includes(toolName)) process.exit(0);
-  if (toolName === OMNIBUS_TOOL) process.exit(0);
 
   // mcp__<any server name, hyphens/underscores allowed>__<operation> — the
   // operation is whatever follows the LAST `__`, so a server name containing
