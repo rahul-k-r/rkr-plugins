@@ -1,0 +1,27 @@
+{
+  "sdlc": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node gate-git.js",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node guard-agent-tools.js",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

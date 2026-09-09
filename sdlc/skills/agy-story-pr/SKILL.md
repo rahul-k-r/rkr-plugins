@@ -13,7 +13,7 @@ are passed through identically to how `commands/story-pr.md` describes reading t
 Every path it references is relative to this same plugin root and resolves identically under
 Antigravity — see `docs/antigravity-port-notes.md`. This command dispatches no subagents, so
 there is nothing Antigravity-specific to adapt here. **Note:** `commands/story-pr.md` may invoke
-`gate-git.js`'s push-timing enforcement indirectly (via the story's phase gate) — per
-`docs/antigravity-port-notes.md`, that hook does not currently fire under Antigravity unless
-manually installed into the global hook config; treat its gate as advisory only until that's
-resolved.
+`gate-git.js`'s push-timing enforcement indirectly (via the story's phase gate) — that's
+`hooks-antigravity/gate-git.js` here, and it enforces nothing until `/agy-install-hooks` has been
+run (and even then, with the disclosed gaps documented there — not the same guarantee as Claude
+Code's). If it hasn't been run, treat the phase gate as advisory only.

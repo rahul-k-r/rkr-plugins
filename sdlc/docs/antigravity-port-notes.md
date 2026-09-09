@@ -52,24 +52,20 @@ free, no separate setup step). **That premise does not hold for Antigravity as o
 An Antigravity port of either hook cannot be "just ship `hooks.json` in the plugin bundle" —
 it would only ever take effect if the user manually copies/merges that config into their own
 `~/.gemini/config/hooks.json`, a real, undocumented-by-us-so-far setup step, not something a
-plugin install can do on its own. Options, not yet decided:
+plugin install can do on its own.
 
-1. **Ship the hook logic in the plugin anyway, as a documented manual-install step** — an
-   `install-hooks` command/script that merges the plugin's hook config into the user's global
-   file (with the user's confirmation, since it's editing a file outside the plugin's own
-   directory). Real enforcement, but onboarding friction, and re-running the merge is needed
-   whenever the plugin's hook logic changes.
-2. **Drop hook-based enforcement for the Antigravity port entirely**, relying only on each
-   subagent's own `tools`/`disallowedTools` frontmatter for scoping (weaker than Claude Code's
-   guarantee — a hook can catch things frontmatter-level scoping can't, e.g. the six
-   tracker-touching agents that need full inheritance because MCP server names aren't knowable
-   in advance — see `skills/tracker-adapter/SKILL.md`).
-3. **Wait and revisit** if Antigravity's plugin system starts auto-wiring plugin hooks in a
-   future release — worth periodically re-testing with the same minimal harness before assuming
-   this is still true.
-
-No decision made yet — this file exists so the investigation itself isn't lost, and so whichever
-option gets picked later has the actual evidence behind it, not a re-guess.
+**Decided (2026-09-08): option 1 — ship the hook logic, as a documented manual-install step.**
+`hooks-antigravity/gate-git.js` and `guard-agent-tools.js` carry the same policy as their Claude
+Code originals; `skills/agy-install-hooks/SKILL.md` merges them into the user's global config,
+with explicit confirmation before writing (it edits a file outside the plugin's own directory)
+and a loud, standing warning that this **cannot guarantee the same safety Claude Code gets
+automatically** — real enforcement, but weaker and with real disclosed gaps (see both hook
+files' own headers): agent identity depends on the dispatching prompt setting `Role` correctly
+rather than a platform-set field, and several payload field names were never directly confirmed.
+Re-running the merge is needed whenever the plugin's hook logic changes; a future Antigravity
+release that starts auto-wiring plugin hooks would make this manual step (and its gaps)
+unnecessary — worth periodically re-testing with the original minimal harness before assuming
+that's happened.
 
 ## `agents/*.md` does not power `invoke_subagent` dispatch
 
@@ -138,6 +134,14 @@ once and trusts the invoking session to apply it consistently wherever the under
 > describes passing, `Workspace: "inherit"` unless the file says otherwise. Everything else about
 > the step — what the dispatch is for, how its output is used, escalation/revise-budget rules —
 > applies completely unchanged.
+>
+> **One exception to the free-text `Role`:** for the six tracker-touching agents — `intake`,
+> `pr-reviewer`, `surveyor`, `verifier`, `publisher`, `scribe` — set `Role` to **exactly the
+> agent's own name**, lowercase, nothing else appended (e.g. `Role: "scribe"`, not `Role: "Tracker
+> Comment Poster"`). `hooks-antigravity/guard-agent-tools.js` (see below) has no way to identify
+> which agent is calling a tool other than matching this field verbatim — a descriptive title
+> would make its scoping silently inert for that dispatch. Every other agent keeps a free-text
+> `Role`, since nothing keys off it.
 
 Two things every one of these 5 files also does that need a stated, not silently-applied,
 translation:
