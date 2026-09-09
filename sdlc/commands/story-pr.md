@@ -1,6 +1,6 @@
 ---
 description: "Commit, push the story branch, and open the story PR against the resolved base branch — the step that triggers CI."
-argument-hint: "[STORY-KEY] [--review] [--fix] [--technical]"
+argument-hint: "[STORY-KEY] [--review] [--fix] [--plain]"
 ---
 
 # /sdlc:story-pr
@@ -18,7 +18,7 @@ Arguments arrive as `$ARGUMENTS`: `$1` is an optional story key — a real track
 **Flags:**
 - `--review` — run a pre-PR self-review of the diff (off by default; see step 3a). Catches the obvious stuff before an external reviewer does.
 - `--fix` — with `--review`, apply the high-confidence findings to the working tree instead of only reporting them. Ignored without `--review`.
-- `--technical` — keep chat output in the engineer-level voice. Without it (the default), everything explained to the developer — the diff walkthrough, self-review findings and their disposition options, and the report-back — follows `skills/plain-language/STANDARD.md`; commit messages and the PR title/body keep their fixed technical form either way.
+- `--plain` — narrate everything explained to the developer — the diff walkthrough, self-review findings and their disposition options, and the report-back — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; commit messages and the PR title/body keep their fixed technical form either way.
 
 ## Steps
 

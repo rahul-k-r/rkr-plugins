@@ -1,6 +1,6 @@
 ---
 description: "Autonomous multi-PR review subsystem: parallel story-PR reviews with cross-ticket compatibility checks, and the sprint-close gate that verifies a sprint is safe to merge to main."
-argument-hint: "<PR# ...> [--fix] [--review] [--effort <tier>] | --sprint [id] [--depth spot|full] [--effort <tier>] [--post] [--close] [--technical] [--show-stats] [--resume]"
+argument-hint: "<PR# ...> [--fix] [--review] [--effort <tier>] | --sprint [id] [--depth spot|full] [--effort <tier>] [--post] [--close] [--plain] [--show-stats] [--resume]"
 ---
 
 # /sdlc:review-run
@@ -20,8 +20,8 @@ Parallel independent reviews of each PR (DoD + correctness + design conformance)
 ## Usage
 
 ```
-/sdlc:review-run <PR# ...> [--fix] [--review] [--effort <tier>] [--post] [--technical] [--show-stats] [--resume]
-/sdlc:review-run --sprint [id] [--depth spot|full] [--effort <tier>] [--post] [--close] [--technical] [--show-stats] [--resume]
+/sdlc:review-run <PR# ...> [--fix] [--review] [--effort <tier>] [--post] [--plain] [--show-stats] [--resume]
+/sdlc:review-run --sprint [id] [--depth spot|full] [--effort <tier>] [--post] [--close] [--plain] [--show-stats] [--resume]
 ```
 
 Arguments arrive as `$ARGUMENTS`. Examples:
@@ -43,7 +43,7 @@ Arguments arrive as `$ARGUMENTS`. Examples:
 - `--review` — **Mode A only.** Alongside each PR's `reviewer` pass, also run `/code-review <PR#>` (low/medium effort — high-confidence findings only, same default `/sdlc:story-pr --review` uses) as a second, complementary pass: general correctness/reuse/simplification/efficiency issues, distinct from `reviewer`'s DoD/design-conformance focus. Findings from both merge into the same per-PR set — same severities, same reporting, the same `--post` gate, and (with `--fix`) the same triage; each is just tagged with its source for the audit trail. Runs **sequentially** across the batch, one PR at a time (`/code-review` is invoked inline via the Skill tool, not a parallel Task dispatch like `reviewer`) — adds wall-clock time roughly proportional to the batch size. `/code-review`'s own effort level is independent of this run's `--effort`/`skills/model-effort/SKILL.md` tier — that skill makes its own model choices internally. Default: off. See step 2a.
 - `--fix` — **Mode A only.** After the batch report (step 6), chain into the `/sdlc:review-fix` procedure for each not-clean PR **the current developer authored**: triage findings, fix the fixable, push, re-verify — see that command for the full contract (budgets, escalation, hard boundaries). Teammates' PRs and integrator cross-findings are never autofixed — they stay report-only. With `--review` also set, review-fix's own convergence check (its step 4e) also re-runs `/code-review` fresh, not just `reviewer` — passed through, not re-asked. **With `--sprint`, reject the flag with a one-line reason** (auto-committing to a sprint branch during the close gate is not a thing this plugin invites) and run Mode B normally. Review-run itself stays read-only either way: its own agents never write; every code change happens inside the review-fix procedure, behind its gates.
 - `--close` — Mode B only: on `SPRINT_READY`, open the sprint→main PR per `/sdlc:sprint-pr` (template body + this run's gate report). Without it, Mode B stops at the verdict.
-- `--technical` — keep chat output in the engineer-level voice. **Without it (the default), everything reported to the developer in chat — per-PR verdicts, cross-findings, the sprint gate report, the batch-post confirmation — follows `skills/plain-language/STANDARD.md`**; the GitHub reviews/comments actually posted, the sprint PR body, and tracker mirrors keep their fixed technical form either way. Recorded as `technical` in `review-state.json` at Step 0 init so `--resume` keeps the mode; passing the flag at resume overrides. With `--close`, the mode carries into the inline `sprint-pr` procedure.
+- `--plain` — narrate everything reported to the developer in chat — per-PR verdicts, cross-findings, the sprint gate report, the batch-post confirmation — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; the GitHub reviews/comments actually posted, the sprint PR body, and tracker mirrors keep their fixed technical form either way. Recorded as `technical: false` in `review-state.json` at Step 0 init so `--resume` keeps the mode; passing the flag at resume overrides. With `--close`, the mode carries into the inline `sprint-pr` procedure.
 - `--show-stats` — auto-publish the fixed-format usage report (per-dispatch model/timing/tokens) as a claude.ai Artifact when the run concludes. Dispatch data is always collected and always snapshotted locally regardless of this flag — forgot to pass it? `/sdlc:show-stats <run-id>` renders the same report on demand, mid-run or after. Default: off (report still exists; it just isn't auto-published). See **Usage statistics** below.
 - `--resume` — continue from `docs/stories/_reviews/<run-id>/review-state.json` (completed per-PR reviews are not re-run). `effort` and `review` are both read back from state, not re-resolved — passing `--effort` again is harmless (it just reasserts or deliberately changes it, same as `story-run`); a PR whose step 2a already ran isn't re-run on resume, same as step 2.
 

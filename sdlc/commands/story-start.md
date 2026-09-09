@@ -1,6 +1,6 @@
 ---
 description: "Gate check before implementation: verify the design note, fetch the full AC (or record locally-stated criteria), cut the correctly-named branch from the resolved base branch, and move the issue to In Progress."
-argument-hint: "<STORY-KEY> [--worktree <path> | --no-worktree] [--incognito] [--technical] (e.g. AGL-19)"
+argument-hint: "<STORY-KEY> [--worktree <path> | --no-worktree] [--incognito] [--plain] (e.g. AGL-19)"
 ---
 
 # /sdlc:story-start
@@ -9,9 +9,9 @@ Pick up a story: verify the design-note gate, read the full acceptance criteria 
 
 Arguments arrive as `$ARGUMENTS`: `$1` is the story key. Resolve the tracker per `skills/tracker-adapter/SKILL.md` (Step 0) before doing anything else. If a tracker is configured and `$1` looks like it, treat it as a real key — resolved from the tracker, never inferred or guessed; translate any legacy ticket-ID scheme first. If it doesn't resolve, or `tracker: none`, or no `$1` was given at all, this is a **local key / no-ticket run** — the same handling `/sdlc:story-run` uses: no lookup is ever attempted against the key, the developer states success criteria directly instead of an AC fetch, and every tracker write redirects to `docs/stories/<KEY>/provenance.md`. `--incognito` forces that write-redirect even when a real tracker key resolved (reads still happen normally) — a local key implies it automatically, no flag needed.
 
-## Output style (`--technical`)
+## Output style (`--plain`)
 
-`--technical` (anywhere in `$ARGUMENTS`) keeps chat output in the engineer-level voice. Without it (the default), everything explained to the developer — the AC summary, any refusal and what's missing, the assignment questions, and the subtask plan — follows `skills/plain-language/STANDARD.md`; branch names, tracker keys, and posted comments (or provenance entries) keep their fixed technical form either way.
+`--plain` (anywhere in `$ARGUMENTS`) narrates everything explained to the developer — the AC summary, any refusal and what's missing, the assignment questions, and the subtask plan — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; branch names, tracker keys, and posted comments (or provenance entries) keep their fixed technical form either way.
 
 ## Steps
 

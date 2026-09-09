@@ -1,6 +1,6 @@
 ---
 description: "Verify a story against the Definition of Done — per-item PASS/GAP checklist and a verdict. Auto-detects reviewer mode for a teammate's PR."
-argument-hint: "[STORY-KEY] [--technical]"
+argument-hint: "[STORY-KEY] [--plain]"
 ---
 
 # /sdlc:story-check
@@ -16,9 +16,9 @@ Verify a story against the Definition of Done — a readiness check producing a 
 
 Arguments arrive as `$ARGUMENTS`: `$1` is the story key — a real tracker key, or a local key when the story has no tracker; if absent, ask which story to check. Reference a real tracker key only in its live form — translate any legacy ticket IDs first. A local key is used opaquely, as-is.
 
-## Output style (`--technical`)
+## Output style (`--plain`)
 
-`--technical` (anywhere in `$ARGUMENTS`) keeps chat output in the engineer-level voice. Without it (the default), the narration around the checklist — what each PASS/GAP means, why the verdict is what it is, and what to do next — follows `skills/plain-language/STANDARD.md`. The checklist/verdict block itself keeps its exact format and verbatim evidence in both modes, and any GitHub review posted in reviewer mode stays in its fixed technical form.
+`--plain` (anywhere in `$ARGUMENTS`) narrates the checklist — what each PASS/GAP means, why the verdict is what it is, and what to do next — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice. The checklist/verdict block itself keeps its exact format and verbatim evidence in both modes, and any GitHub review posted in reviewer mode stays in its fixed technical form.
 
 ## Steps
 

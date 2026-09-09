@@ -1,6 +1,6 @@
 ---
 description: "Verify-before-done: confirm merge, CI, AC coverage, post completion record, transition to Done, report unblocked tickets."
-argument-hint: "<STORY-KEY> [--technical] (e.g. AGL-19)"
+argument-hint: "<STORY-KEY> [--plain] (e.g. AGL-19)"
 ---
 
 # /sdlc:close-story
@@ -17,9 +17,9 @@ Arguments arrive as `$ARGUMENTS`: `$1` is the story key — a real tracker key, 
 
 **Local docs.** Check the same state file for `local_docs`, per `skills/local-docs/SKILL.md` (absent/`false` → today's behavior). `true` means Step 4 reads the design note from the session's own root, not `worktree` — that's where it's always lived, since nothing ever committed it — and Step 7's "Design Note pointer" update has nothing new to say (the note was never moved to a post-merge path in the first place).
 
-## Output style (`--technical`)
+## Output style (`--plain`)
 
-`--technical` (anywhere in `$ARGUMENTS`) keeps chat output in the engineer-level voice. Without it (the default), everything explained to the developer — why closing is or isn't allowed, what a gap means, and the unblocked-tickets report — follows `skills/plain-language/STANDARD.md`. The completion record — posted to the tracker, or appended to `provenance.md` under incognito — keeps its exact template and verbatim evidence in both modes.
+`--plain` (anywhere in `$ARGUMENTS`) narrates everything explained to the developer — why closing is or isn't allowed, what a gap means, and the unblocked-tickets report — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice. The completion record — posted to the tracker, or appended to `provenance.md` under incognito — keeps its exact template and verbatim evidence in both modes.
 
 ## Steps
 

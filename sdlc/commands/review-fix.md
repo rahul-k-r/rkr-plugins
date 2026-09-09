@@ -1,6 +1,6 @@
 ---
 description: "Apply review findings to a PR you authored: triage each finding (fixable vs. needs-your-judgment), fix the fixable on the story branch, verify with a fresh review pass, and escalate the rest. The write-side counterpart that keeps review-run purely read-only."
-argument-hint: "<PR#> [--budget N] [--review] [--effort <tier>] [--technical] [--show-stats]"
+argument-hint: "<PR#> [--budget N] [--review] [--effort <tier>] [--plain] [--show-stats]"
 ---
 
 # /sdlc:review-fix
@@ -19,14 +19,14 @@ Consumes review findings against **one PR the current developer authored** and w
 ## Usage
 
 ```
-/sdlc:review-fix <PR#> [--budget N] [--review] [--effort <tier>] [--technical] [--show-stats]
+/sdlc:review-fix <PR#> [--budget N] [--review] [--effort <tier>] [--plain] [--show-stats]
 ```
 
 - `<PR#>` — exactly one PR number. Required standalone (callers pass it programmatically).
 - `--budget N` — fix-loop attempts before escalating (default `2`).
 - `--review` — when collecting findings standalone (step 1), also run `/code-review <PR#>` (low/medium effort — same default `/sdlc:story-pr --review` and `/sdlc:review-run --review` use) alongside the PR's posted reviews/threads, merged into the same triage. **When invoked inline** (`review-run --fix`, `story-run --bypass`'s `AUTO_FIX`), this is **inherited from the caller, never re-asked** — if the caller ran with `--review`, this run's own convergence check (step 4e) also re-runs `/code-review` fresh, not just `reviewer`, regardless of where the original findings came from. `/code-review`'s own effort level is independent of this run's `--effort`/`skills/model-effort/SKILL.md` tier.
 - `--effort <tier>` — override `.sdlc/config.json`'s `effort` for this run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/`high`/`extra-high`). Omitted → the config's `effort`, or `high` if that's unset too. **When invoked inline (`review-run --fix`, `story-run --bypass`'s `AUTO_FIX` step), `effort` was already resolved by the caller — inherited as given, never re-resolved.**
-- `--technical` — keep chat output in the engineer-level voice. Without it (the default), everything reported in chat — the triage, the loop progress, the final verdict — follows `skills/plain-language/STANDARD.md`; commits, the PR summary comment, and any tracker mirror keep their fixed technical form either way. When a run invokes this procedure inline, the run's mode cascades in as usual.
+- `--plain` — narrate everything reported in chat — the triage, the loop progress, the final verdict — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; commits, the PR summary comment, and any tracker mirror keep their fixed technical form either way. When a run invokes this procedure inline, the run's mode cascades in as usual.
 - `--show-stats` — auto-publish the usage report as an Artifact at the end. Collection and the local snapshot happen regardless (see **State & stats**).
 
 No `--resume`: the loop is short and a re-review must be fresh anyway (the diff changes under it) — if a session dies mid-loop, just re-run the command; commits already made stand, uncommitted work is discarded (`git reset --hard HEAD`, `-C <worktree>` when one's in play) as unverified.

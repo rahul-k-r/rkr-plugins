@@ -1,11 +1,11 @@
-# Plain-Language Output Standard (`--technical`)
+# Plain-Language Output Standard (`--plain`)
 
-This plugin's commands that explain, deliberate, or gate — `story-run`, `design-run`, `review-run`, `review-fix`, `plan-the-design`, `design-review`, `story-start`, `story-pr`, `story-check`, `sprint-pr`, `close-story` — accept a `--technical` flag. It controls one thing: **the voice of what the command says to the developer in chat.** The mechanical commands (`adr`, `build-check`, `commit`, `help`, `init`, `show-stats`) don't take the flag: invoked standalone they keep their normal voice; executed inside a run or another flagged command, they inherit the caller's mode (see **Cascade** below).
+This plugin's commands that explain, deliberate, or gate — `story-run`, `design-run`, `review-run`, `review-fix`, `plan-the-design`, `design-review`, `story-start`, `story-pr`, `story-check`, `sprint-pr`, `close-story` — accept a `--plain` flag. It controls one thing: **the voice of what the command says to the developer in chat.** The mechanical commands (`adr`, `build-check`, `commit`, `help`, `init`, `show-stats`) don't take the flag: invoked standalone they keep their normal voice; executed inside a run or another flagged command, they inherit the caller's mode (see **Cascade** below).
 
-- **Without `--technical` (the default):** everything explained to the developer in chat follows the standard below — briefings, scope framings, design issues, alternatives with pros & cons, questions, escalations, gate digests, verdicts, reports, and hand-offs. This is the accessible mode: someone without an engineering background should be able to follow the run and make every decision it asks of them.
-- **With `--technical`:** chat output uses the plugin's engineer-level voice — terse, jargon-fluent, no re-explaining of fundamentals.
+- **Without `--plain` (the default):** chat output uses the plugin's engineer-level voice — terse, jargon-fluent, no re-explaining of fundamentals.
+- **With `--plain`:** everything explained to the developer in chat follows the standard below — briefings, scope framings, design issues, alternatives with pros & cons, questions, escalations, gate digests, verdicts, reports, and hand-offs. This is the accessible mode: someone without an engineering background should be able to follow the run and make every decision it asks of them.
 
-Parse `--technical` from anywhere in `$ARGUMENTS`. It composes with every other flag.
+Parse `--plain` from anywhere in `$ARGUMENTS`. It composes with every other flag.
 
 ## What the flag never changes
 
@@ -36,13 +36,13 @@ The model interaction (the origin of this standard is `plan-the-design`'s Phase 
 
 The orchestrating session is the only thing that talks to the developer, so the flag lives there: subagents (`designer`, `architect`, `coder`, …) are dispatched exactly as today and return their normal technical output — the orchestrator translates when presenting in plain mode. Never dilute a dispatch prompt or an agent's artifact for the flag's sake.
 
-Long-running commands (`story-run`, `design-run`, `review-run`) record `"technical": true|false` in their state file at init, so `--resume` continues in the same mode without re-passing the flag; passing `--technical` at resume time overrides the stored value.
+Long-running commands (`story-run`, `design-run`, `review-run`) record `"technical": true|false` in their state file at init (`false` exactly when `--plain` was passed), so `--resume` continues in the same mode without re-passing the flag. At resume, `--plain` overrides a stored `true`; `--technical` overrides a stored `false` — neither is needed just to keep the mode.
 
 ## Cascade — the mode follows the run
 
 The output mode is set **once, at the top-level invocation**, and governs everything that invocation does — including every other command's procedure it executes inline. Concretely:
 
-- `story-run`'s DESIGN phase (the `design-run` procedure), its verify steps (`build-check`), its PR step (`story-pr`'s body template and report-back), and — under `--bypass` — the entire tail (`review-run` Mode A, the `review-fix` fix loop, the `story-check` audit, `close-story` inline) all speak in the mode the `story-run` invocation set. `story-run AGL-42 --bypass --technical` is engineer-voiced end to end; without `--technical` the whole lifecycle is narrated plainly.
+- `story-run`'s DESIGN phase (the `design-run` procedure), its verify steps (`build-check`), its PR step (`story-pr`'s body template and report-back), and — under `--bypass` — the entire tail (`review-run` Mode A, the `review-fix` fix loop, the `story-check` audit, `close-story` inline) all speak in the mode the `story-run` invocation set. `story-run AGL-42 --bypass` is engineer-voiced end to end; with `--plain` the whole lifecycle is narrated plainly.
 - `review-run --close` carries its mode into the inline `sprint-pr` procedure.
 - On `--resume`, the state file's `technical` field restores the mode for whatever remains of the run, including the tail.
 

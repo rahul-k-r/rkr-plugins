@@ -1,6 +1,6 @@
 ---
 description: "Run the full design-review protocol for a story as an interactive dialogue with the developer, producing a design note and posting cross-story obligations."
-argument-hint: "<STORY-KEY> [--technical] (e.g. AGL-19)"
+argument-hint: "<STORY-KEY> [--plain] (e.g. AGL-19)"
 ---
 
 # /sdlc:plan-the-design $STORY_KEY
@@ -8,9 +8,9 @@ argument-hint: "<STORY-KEY> [--technical] (e.g. AGL-19)"
 > **Anti-pattern — read this first.**
 > Do NOT produce a finished design note in a single autonomous pass. The deliberation is the deliverable; the note is its byproduct. Never answer on the developer's behalf. Every design question requires the developer's own reasoning before a decision is recorded. If the developer hasn't spoken, you haven't finished the step.
 
-## Output style (`--technical`)
+## Output style (`--plain`)
 
-`--technical` (anywhere in `$ARGUMENTS`) keeps the dialogue in the engineer-level voice. **Without it (the default), the entire deliberation — not just Phase 0.5 — is conducted per `skills/plain-language/STANDARD.md`:** Phase 1's scope framing, Phase 2's candidate issues, Phase 3's alternatives, stress-lens prompts, and decision summaries, Phase 4's boundaries, and the Phase 5 walkthrough of the draft are all phrased so a developer without deep engineering background can reason and decide. Phase 0.5's briefing is this standard's origin and happens in both modes. The design note itself, obligation comments (or their manual-tracking equivalent), and everything written to disk keep their fixed technical form either way — in plain mode, explain in chat what the draft says before asking for approval.
+`--plain` (anywhere in `$ARGUMENTS`) conducts **the entire deliberation — not just Phase 0.5 — per `skills/plain-language/STANDARD.md`** instead of the default engineer-level voice: Phase 1's scope framing, Phase 2's candidate issues, Phase 3's alternatives, stress-lens prompts, and decision summaries, Phase 4's boundaries, and the Phase 5 walkthrough of the draft are all phrased so a developer without deep engineering background can reason and decide. Phase 0.5's briefing is this standard's origin and happens in both modes. The design note itself, obligation comments (or their manual-tracking equivalent), and everything written to disk keep their fixed technical form either way — in plain mode, explain in chat what the draft says before asking for approval.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: "Autonomous multi-expert design deliberation: frame the design issues, argue each through a lens panel, synthesize decisions, draft and adversarially review the design note — escalating only genuinely major calls."
-argument-hint: "<STORY-KEY> [--worktree <path> | --no-worktree] [--effort <tier>] [--no-gate design] [--technical] [--show-stats] [--resume]"
+argument-hint: "<STORY-KEY> [--worktree <path> | --no-worktree] [--effort <tier>] [--no-gate design] [--plain] [--show-stats] [--resume]"
 ---
 
 # /sdlc:design-run
@@ -12,14 +12,14 @@ Produces a story's design note autonomously at deliberation quality, not just dr
 ## Usage
 
 ```
-/sdlc:design-run <STORY-KEY> [--worktree <path> | --no-worktree] [--effort <tier>] [--no-gate design] [--technical] [--show-stats] [--resume]
+/sdlc:design-run <STORY-KEY> [--worktree <path> | --no-worktree] [--effort <tier>] [--no-gate design] [--plain] [--show-stats] [--resume]
 ```
 
 - `$1` is the story key; if absent, ask. Live tracker keys only (`jira`|`linear`) — translate legacy IDs first. If `$1` doesn't resolve against the tracker, or no tracker is configured at all (`tracker: none`), or `$1` was omitted entirely, this is a **no-ticket run** — resolved exactly as `story-run`'s **`--incognito` and no-ticket runs** section describes (a local key, confirmed with the developer if inferred, and `local_ac` standing in for a fetched issue). See Step 0.
 - `--worktree <path>` / `--no-worktree` — how the story's git/file work is isolated, per `skills/worktree-mode/SKILL.md` (the design note and any ADRs are committed artifacts under `local_docs: false`, so they belong wherever the branch's checkout is — see `skills/local-docs/SKILL.md` for the `local_docs: true` case, where this doesn't apply to them). Default (neither passed): create a fresh `git worktree` at `.claude/worktrees/<key-lower>-slug`. `--worktree <path>` targets an existing one instead of creating it. `--no-worktree` skips worktree isolation entirely, operating directly in the current checkout. Mutually exclusive with each other. This session never calls `EnterWorktree` itself for any of the three — see that skill for why. **When dispatched inline by `story-run`'s DESIGN phase, `worktree` (and the branch) were already resolved and applied by the parent run's own Step 1 — these flags, and Step 1 below, apply only to a standalone invocation.**
 - `--effort <tier>` — override `.sdlc/config.json`'s `effort` for this run only, per `skills/model-effort/SKILL.md` (`very-low`/`low`/`medium`/`high`/`extra-high`). Omitted → the config's `effort`, or `high` if that's unset too. **When dispatched inline by `story-run`, `effort` was already resolved by the parent run's own Step 0 — inherited as given, never re-resolved.**
 - `--no-gate design` — skip the final human gate on the finished note (inline escalations for major calls still always happen). Default: the gate is **on**.
-- `--technical` — keep chat output in the engineer-level voice. **Without it (the default), everything said to the developer in chat — the framing summary, inline escalations, the Step 7 gate digest, the graduation backlog — follows `skills/plain-language/STANDARD.md`**; the note, ADRs, tracker comments (or provenance entries), and commits keep their fixed technical form either way. Recorded as `technical` in the state file at Step 0 init so `--resume` keeps the mode; passing the flag at resume overrides.
+- `--plain` — narrate everything said to the developer in chat — the framing summary, inline escalations, the Step 7 gate digest, the graduation backlog — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; the note, ADRs, tracker comments (or provenance entries), and commits keep their fixed technical form either way. Recorded as `technical: false` in the state file at Step 0 init so `--resume` keeps the mode; passing the flag at resume overrides.
 - `--show-stats` — auto-publish the fixed-format usage report (per-dispatch model/timing/tokens, phase durations) as a claude.ai Artifact at Step 7. Dispatch data is always collected and always snapshotted locally regardless of this flag — forgot to pass it? `/sdlc:show-stats <KEY>` renders the same report on demand, mid-run or after. Default: off (report still exists; it just isn't auto-published). See **Usage statistics** below.
 - `--resume` — continue from `docs/stories/<KEY>/story-state.json` / `checkpoint.md`, in any chat.
 

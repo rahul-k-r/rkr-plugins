@@ -1,6 +1,6 @@
 ---
 description: "Open the end-of-week sprint→main PR — the reviewed, approval-required merge that lands a whole sprint onto main."
-argument-hint: "[sprint-id] [--technical]"
+argument-hint: "[sprint-id] [--plain]"
 ---
 
 # /sdlc:sprint-pr
@@ -11,9 +11,9 @@ This command's entire purpose only makes sense under `branchModel: sprint` — s
 
 Arguments arrive as `$ARGUMENTS`: `$1` is an optional sprint id, resolved as `sprint/<id>`. If none is given, detect the active one as the highest-numbered `sprint/*` on origin (`git ls-remote --heads origin 'sprint/*'`); if ambiguous, ask.
 
-## Output style (`--technical`)
+## Output style (`--plain`)
 
-`--technical` (anywhere in `$ARGUMENTS`) keeps chat output in the engineer-level voice. Without it (the default), everything explained to the developer — sprint readiness, any story flagged as not Done, why reconciliation with `main` is needed, and the pending gate — follows `skills/plain-language/STANDARD.md`; the PR title/body keep their fixed template in both modes.
+`--plain` (anywhere in `$ARGUMENTS`) narrates everything explained to the developer — sprint readiness, any story flagged as not Done, why reconciliation with `main` is needed, and the pending gate — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; the PR title/body keep their fixed template in both modes.
 
 ## Steps
 

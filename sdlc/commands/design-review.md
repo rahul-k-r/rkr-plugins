@@ -1,13 +1,13 @@
 ---
 description: "Critique and deepen an existing design note by running the Q1–Q7 protocol against it. Does not create a new note."
-argument-hint: "<STORY-KEY> [--technical] (e.g. AGL-19)"
+argument-hint: "<STORY-KEY> [--plain] (e.g. AGL-19)"
 ---
 
 # /sdlc:design-review $STORY_KEY
 
-## Output style (`--technical`)
+## Output style (`--plain`)
 
-`--technical` (anywhere in `$ARGUMENTS`) keeps the critique in the engineer-level voice. Without it (the default), the findings report — gaps, challenges, suggestions, and what each means for the story — follows `skills/plain-language/STANDARD.md`; cited sections, invariants, and file references stay verbatim either way.
+`--plain` (anywhere in `$ARGUMENTS`) narrates the findings report — gaps, challenges, suggestions, and what each means for the story — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; cited sections, invariants, and file references stay verbatim either way.
 
 **Worktree & local docs.** Check `docs/stories/$STORY_KEY/story-state.json` (if present — absent means this story never went through `/sdlc:story-start`/`/sdlc:story-run`, so there's nothing but the session's own root to check) for `worktree` and `local_docs`, per `skills/worktree-mode/SKILL.md` and `skills/local-docs/SKILL.md`. Step 1 opens the note at its resolved location: the session's own root under `local_docs: true`, `worktree` (when set) otherwise — a review invoked from inside the story's own worktree mid-implementation still needs this to find the right copy.
 
