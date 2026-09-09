@@ -20,7 +20,7 @@ Every `sdlc` command/agent that touches a ticket does so through this file — n
 
 ## Per-agent scoping without hardcoding server names
 
-MCP server names are chosen per-project (whatever `.mcp.json`/`claude mcp add` calls it) — a subagent's `tools:` frontmatter can only grant one *exact* server (`mcp__atlassian-idvibes__*`), never a wildcard across server-name variants (no `mcp__*__toolname`, no bare `mcp__*` on the allow side, no per-dispatch override from the Task tool either — confirmed against the platform docs). So the six agents that touch a tracker — `intake`, `pr-reviewer`, `surveyor`, `verifier`, `publisher`, `scribe` — carry **no `tools:` field at all**. A hook can only add restriction on top of what frontmatter allows, never grant beyond it, so full inheritance is the only way any of them can reach an MCP server whose name isn't known in advance.
+MCP server names are chosen per-project (whatever `.mcp.json`/`claude mcp add` calls it) — a subagent's `tools:` frontmatter can only grant one *exact* server (`mcp__atlassian-idvibes__*`), never a wildcard across server-name variants (no `mcp__*__toolname`, no bare `mcp__*` on the allow side, no per-dispatch override from the Task tool either — confirmed against the platform docs). So the four agents that touch a tracker — `intake`, `surveyor`, `verifier`, `publisher` — carry **no `tools:` field at all**. (`reviewer` in PR mode needs none of this: the orchestrator resolves the story's Depends-on keys and hands them in, so the reviewer keeps a static, fail-closed `tools:` list. Provenance posting is the orchestrating session's own tool call.) A hook can only add restriction on top of what frontmatter allows, never grant beyond it, so full inheritance is the only way any of them can reach an MCP server whose name isn't known in advance.
 
 Their actual scoping is enforced dynamically instead, by `hooks/guard-agent-tools.js` (a `PreToolUse` hook): it reads `agent_type` and `tool_name` from the hook payload and denies anything outside that agent's approved built-in tools and tracker *operations* — matched by operation name via regex (`mcp__.+__<op>`), never by server name. A brand-new MCP server name (a new project, a differently-named Jira/Linear connection) never needs a plugin edit — the regex matches the operation regardless of which server exposes it.
 
@@ -35,7 +35,7 @@ Every op below is either a **read** (`get_issue`, `search`, `get_current_user`) 
 - **`writeMode: normal`** (default when a tracker is configured and `--incognito` wasn't passed) — reads and writes both go to the resolved tracker.
 - **`writeMode: incognito`** — reads still happen normally (tracker, or a GitHub issue, or whatever's available — incognito is about not *polluting* someone else's tracker, not about refusing to read it). Every write is redirected to the local provenance file instead (see **Local provenance file** below). Resolved as: `--incognito` flag on the invoking command → incognito; else `tracker: none` → incognito by default (nothing to write to anyway); else `normal`.
 
-Commands that dispatch `scribe` or write to a ticket pass the resolved `writeMode` down explicitly — never re-derive it mid-run.
+Commands that write to a ticket resolve `writeMode` once at preflight and pass it into every inline procedure explicitly — never re-derive it mid-run.
 
 ## Op table
 
@@ -44,7 +44,7 @@ Commands that dispatch `scribe` or write to a ticket pass the resolved `writeMod
 | `get_issue(key)` | `jira_get_issue` / `getJiraIssue` | `get_issue` | Summary, description, AC (Jira: description or a custom field; Linear: description), status, comments, linked issues. |
 | `search(query)` | `jira_search` / `searchJiraIssuesUsingJql` (JQL) | `list_issues` (filter params — no JQL equivalent; filter by team/state/query as needed) | Used for legacy-key resolution and discovered-work "does a ticket already cover this" checks. |
 | `get_current_user()` | `jira_get_user_profile` / `atlassianUserInfo` | `get_user` (self) / `list_users` filtered to the session identity | Used only by the assignment-check step. If the tracker has no clean "who am I" call, ask once rather than guess. |
-| `add_comment(key, text)` | `jira_add_comment` / `addCommentToJiraIssue` | `save_comment` (new comment, no id) | The provenance-posting op `scribe` uses. |
+| `add_comment(key, text)` | `jira_add_comment` / `addCommentToJiraIssue` | `save_comment` (new comment, no id) | The provenance-posting op — see **Provenance records** below. |
 | `transition_status(key, target)` | `jira_transition_issue` / `jira_get_transitions` then transition; `editJiraIssue`/`jira_update_issue` for the status field | `list_issue_statuses` (resolve the target state's id) then `save_issue` (set `state`) | Linear has no separate "transition" call — it's a field update once you have the state id. |
 | `assign(key, user)` | `jira_assign_issue` | `save_issue` (`assignee` field) | |
 | `add_to_cycle(key)` | `jira_add_issues_to_sprint` | `save_issue` (`cycle` field) | Jira's "sprint" and Linear's "cycle" are the same concept under different names — always say "the active sprint/cycle" in developer-facing text, never assume the Jira term. |
@@ -64,7 +64,18 @@ Generalizes the fallback `plan-the-design.md` already used for a missing Jira MC
 
 ## Local provenance file
 
-`docs/stories/<key>/provenance.md` — created the first time any write is redirected there. Append-only, one entry per would-be write, same structured shape `scribe` posts to a real tracker (`PLAN_APPROVED`, `BATCH_COMPLETE`, `ESCALATION`, `REVIEW_NOTES`, `COMPLETION_RECORD` — timestamped, human-readable). Lives under `docs/stories/<key>/`, which is already untracked/gitignored convention (`story-run.md` Step 3 ensures `docs/stories/.gitignore` contains `*`) — confirm that's actually in place before relying on it; this is exactly what keeps your own working notes out of a diff you push to a repo you don't own.
+`docs/stories/<key>/provenance.md` — created the first time any write is redirected there. Append-only, one entry per would-be write, same structured shape the **Provenance records** below define (`PLAN_APPROVED`, `BATCH_COMPLETE`, `ESCALATION`, `REVIEW_NOTES`, plus `close-story`'s `COMPLETION_RECORD` — timestamped, human-readable). Lives under `docs/stories/<key>/`, which is already untracked/gitignored convention (`story-run.md` Step 3 ensures `docs/stories/.gitignore` contains `*`) — confirm that's actually in place before relying on it; this is exactly what keeps your own working notes out of a diff you push to a repo you don't own.
+
+## Provenance records
+
+The orchestrating session posts these itself — one `add_comment` call under `writeMode: normal`, one appended entry under `incognito` (a new dated entry in `provenance.md`, created with a one-line header if it doesn't exist yet). No dispatch: the session already holds every input, and a subagent would only be handed the same data back. Build each record from the entry just written to the state file (the `batch_results` entry, the `escalations[]` entry, the `final_review.notes` list) — never by re-reading the whole state file.
+
+- **`PLAN_APPROVED`** — the approved plan digest: the subtask/batch table (id, title, batch, `DESIGN_SENSITIVE` flags) and who signed it off (architect or developer). This is the plan's durable record; `plan-summary.md` itself is ephemeral.
+- **`BATCH_COMPLETE`** — which batch, which subtasks completed (with commit subjects), the reviewer/validator verdicts, anything deferred to later, and — verbatim — any escalation decision the developer resolved since the last record. No fluff, no restating the diff.
+- **`ESCALATION`** — the question, its options, and the recommendation. State plainly that the run is paused and that the decision is given **in the Claude Code session** by re-running with `--resume` — this record is the notification and audit copy, not the reply channel.
+- **`REVIEW_NOTES`** — items judged worth a reviewer's deeper look (accepted-with-caveat findings, deferred MINORs, assumptions the run made under its own judgment), each with its file/section reference and, where one exists, the PR link. These are flags for whoever reviews next — a human or a `review-run` pass — not defects; say so, and keep each note to one or two lines.
+
+Rules: never editorialize beyond what the state file gives you; never transition the issue from a record post (that stays with the start/close commands); **never call a tracker write tool under `writeMode: incognito`**, even if one is registered and reachable — the whole point of that mode is that nothing reaches the tracker. A failed write (tracker unreachable, permission error, local file-write error) is retried once, then recorded with the exact error in the owning entry's `provenance` field and reported at hand-off — never retried silently beyond that, never allowed to stop the run on its own. Completion records are `/sdlc:close-story`'s, with its own template — posting one from a run would duplicate and drift.
 
 ## Key-format note
 

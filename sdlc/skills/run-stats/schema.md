@@ -28,7 +28,7 @@ Appended once per subagent dispatch, always, to the run's own working-state file
 |---|---|---|
 | `seq` | yes | 1-indexed, in dispatch order across the whole run |
 | `phase` | yes | the state-machine phase active at dispatch time (`DESIGN`, `PLAN`, `IMPLEMENT`, …) |
-| `agent` | yes | subagent_type dispatched (`designer`, `coder`, `pr-reviewer`, …) |
+| `agent` | yes | subagent_type dispatched (`designer`, `coder`, `reviewer`, …) |
 | `mode` | no | free-text context when one agent has more than one dispatch shape (e.g. designer's `framing` vs `drafting`) |
 | `model` | yes | the color/grouping role for this dispatch — `opus`, `sonnet`, or `haiku` when it matches the command's own "Model tiering" table for that agent; `other` when the dispatch was given an explicit `model` override outside that set (e.g. to Fable) |
 | `model_version` | yes | the **specific** model version actually running for this dispatch — e.g. `"Opus 4.8"`, `"Sonnet 5"`, `"Haiku 4.5"`, or whatever the override resolves to (e.g. `"Fable 5"`). See "Recording `model_version`" below — this is not something the dispatch's tool result returns, so record it at dispatch time from what the orchestrating session already knows. |

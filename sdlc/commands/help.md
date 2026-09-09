@@ -53,7 +53,7 @@ Arguments arrive as `$ARGUMENTS`:
 | Command | Use it to | Usage |
 |---------|-----------|-------|
 | **/sdlc:story-run** | Run the whole story autonomously: design (via the design-run procedure, only if no note exists), setup with assignment guard, plan, batch-by-batch implement/review/validate, story-level final review, discovered-work triage, push + PR — escalating to you only where judgment is genuinely yours. Pausable at any point (checkpoints resume in any chat). Stops at the open PR by default; with `--bypass`, continues through auto-review (auto-fixing mechanically fixable findings via `review-fix`; `--review` alongside `--bypass` also runs `/code-review`), merge, and close on a clean run. With `--incognito` (or whenever no tracker is configured), tracker writes redirect to a local provenance file and the run stops before pushing — you push and open the PR yourself when ready; incompatible with `--bypass`. | `/sdlc:story-run <KEY> [flags]` |
-| **/sdlc:review-run** | Review many PRs in parallel (DoD + correctness + design conformance per PR, then a cross-ticket integration pass), or run the sprint-close gate (`branchModel: sprint` only — under `branchModel: direct` there's no sprint boundary, and this mode reports not applicable): verify every story, audit the aggregate diff, render SPRINT_READY/HOLD, optionally open the sprint→main PR. Never merges, never self-approves — read-only against code; `--review` (Mode A) also runs `/code-review` per PR alongside `pr-reviewer`; `--fix` chains into `review-fix` for your own PRs. | `/sdlc:review-run <PR#...> [--fix] [--review] \| --sprint [id]` |
+| **/sdlc:review-run** | Review many PRs in parallel (DoD + correctness + design conformance per PR, then a cross-ticket integration pass), or run the sprint-close gate (`branchModel: sprint` only — under `branchModel: direct` there's no sprint boundary, and this mode reports not applicable): verify every story, audit the aggregate diff, render SPRINT_READY/HOLD, optionally open the sprint→main PR. Never merges, never self-approves — read-only against code; `--review` (Mode A) also runs `/code-review` per PR alongside the per-PR `reviewer`; `--fix` chains into `review-fix` for your own PRs. | `/sdlc:review-run <PR#...> [--fix] [--review] \| --sprint [id]` |
 | **/sdlc:review-fix** | Work through review findings on a PR you authored — from a review-run pass or the reviews/threads already on the PR (a teammate's included): triage fixable vs. needs-your-judgment, fix, push, re-verify with a fresh review (and `--review`, a `/code-review` pass too), escalate the rest. The write side of the review subsystem. | `/sdlc:review-fix <PR#> [--budget N] [--review]` |
 | **/sdlc:product-design-review** | Audit the whole product's design top-down: traceability matrix over spec+TDD+all tickets, every end-to-end flow swept for gaps, lens panels on the significant issues, adversarial verification — then persona-partitioned human review sessions (PM/ENG/UX/CROSS) and one bulk-gated publish back to the tracker/docs. Archetype-generic (engine / agentic-app / platform). | `/sdlc:product-design-review [--depth ...] [--session <partition>] [--publish]` |
 
@@ -93,8 +93,9 @@ Not applicable under `branchModel: direct` — story PRs merge straight to `main
 
 ## Hooks (always on, workflow repos only)
 
-The plugin ships four Node hooks, active only in repos using this workflow (detected by `docs/stories/` or `docs/design-notes/` at the repo root — other repos are untouched; the permission-mode notice is scoped by command instead — it only reacts to this plugin's run commands):
+The plugin ships five Node hooks, active only in repos using this workflow (detected by `docs/stories/` or `docs/design-notes/` at the repo root — other repos are untouched; the permission-mode notice is scoped by command instead — it only reacts to this plugin's run commands; the agent-tool guard is scoped by dispatched agent, not by repo):
 
+- **`guard-agent-tools.js`** (PreToolUse on every tool) — enforces per-agent tool scoping for the four tracker-touching subagents (`intake`, `surveyor`, `verifier`, `publisher`), which carry no `tools:` allowlist of their own so they can reach whatever MCP server name a repo happens to use — denies anything outside each agent's approved built-ins and tracker *operations*, matched by operation name rather than server name (see `skills/tracker-adapter/SKILL.md`).
 - **`gate-git.js`** (PreToolUse on Bash) — blocks `git push`/`gh pr create` on a story-run-managed branch until its final review passed (`READY_FOR_PR` or later; `AUTO_FIX`, the `--bypass` tail's review-fix loop, also pushes legally); blocks `git commit` directly on `main`/`master`/`sprint/*` (merge-resolution commits during an in-progress merge are allowed — reconciling `main` into a sprint branch is legitimate); blocks force-pushes to those protected branches.
 - **`validate-state.js`** (PostToolUse on Edit/Write) — validates any written `story-state.json` (parseable, legal phase, key fields) so audit-trail corruption is caught the moment it happens.
 - **`session-start.js`** (SessionStart) — announces paused or in-flight story-runs in the repo, with the `--resume` command to continue them.
@@ -109,21 +110,20 @@ If a gate denies unexpectedly, the story's state regressed — investigate via `
 | `designer` | opus | Frames, deliberates, and drafts the design note autonomously when none exists (interactive notes always win). |
 | `architect` | opus | Principal-architect adversarial review of the design issues, note, and implementation plan. |
 | `panelist` | opus | One lens on the design panel (reliability/failure, security/data-boundary, simplicity/operability) — argues high-stakes issues with evidence and red lines. |
-| `pr-reviewer` | sonnet | (review-run) Reviews one story PR end-to-end from the diff — DoD, correctness, design conformance — without checking it out. |
 | `integrator` | opus | (review-run) Audits the seams between PRs or a sprint's aggregate diff: contract drift, unmet obligations, merge order, integration gaps. |
 | `intake` | sonnet | Assembles the read-only context pack; blocks on broken decision/ADR references. |
 | `planner` | sonnet | Decomposes the story into batched, testable subtasks. |
 | `coder` | opus | Implements one batch; atomic commits; never pushes; never expands scope. |
-| `reviewer` | sonnet | Reviews diffs blind to the coder's reasoning; design conformance first. |
+| `reviewer` | sonnet | Reviews diffs blind to the coder's reasoning — a story-run batch, the whole story, or (review-run/review-fix) one PR end-to-end from its `gh pr diff` without checking it out; design conformance first. |
 | `validator` | haiku | Runs the verify commands mechanically; fixes nothing. |
-| `assessor` | sonnet | Verdicts each batch: PROCEED / RETRY / REPLAN / ESCALATE. |
 | `surveyor` | sonnet | (product-design-review) Digests one epic-slice of the product corpus; emits traceability rows. |
 | `cartographer` | opus | (product-design-review) Merges the traceability matrix; derives the ranked flow inventory; flags orphans mechanically. |
 | `flow-tracer` | opus | (product-design-review) Walks one end-to-end flow with every error/corner variant; emits evidenced gap candidates. |
 | `moderator` | opus | (product-design-review) Clusters findings, runs the lens panels and consensus rules, ranks severity, assembles the partitioned Decision Docket. |
 | `verifier` | opus | (product-design-review) Adversarially refutes findings against the real docs/tickets before humans see them. |
 | `publisher` | haiku | (product-design-review) Executes the human-approved publish manifest in the tracker — idempotent, mechanical, nothing beyond the manifest. |
-| `scribe` | haiku | Posts batch progress, escalations, and review notes to the tracker (or the local provenance file, under incognito). |
+
+Batch verdicts (PROCEED / RETRY / REPLAN / ESCALATE), review-fix triage, and provenance posting (batch progress, escalations, review notes — to the tracker, or the local provenance file under incognito) are the orchestrating session's own work, not agents.
 
 After the catalog, end with the offer line (don't pre-expand it):
 
@@ -147,7 +147,7 @@ Only if asked (or a single command was requested) render:
 | **story-run / design-run / review-run** | `--show-stats` | Auto-publish the fixed-format usage report as a claude.ai Artifact when the run ends. Collection (and the local JSON snapshot under the run's own `docs/stories/<KEY>/_stats/`, never committed to git) happens regardless of this flag — it only gates auto-publishing; `/sdlc:show-stats` renders the same report on demand, flag or no flag. |
 | **review-run** | `--sprint [id]` | Sprint-close gate mode instead of PR-batch mode. `branchModel: sprint` only — reports not applicable under `branchModel: direct`. |
 | **review-run** | `--depth spot\|full` | Sprint-mode per-story verification depth (default spot). |
-| **review-run / review-fix / story-run** | `--review` | Also run `/code-review` (low/medium effort) alongside `pr-reviewer`'s pass, merged into the same finding set. `review-run`: Mode A only, per PR in the batch, sequentially (Skill-invoked, not a parallel Task dispatch). `review-fix`: standalone findings-collection and its own convergence re-check; inherited (not re-asked) when invoked inline. `story-run`: only meaningful with `--bypass` — passed through to the inline `review-run`/`review-fix` the same way. Independent of the `effort` model tier, which only governs this plugin's own agents. |
+| **review-run / review-fix / story-run** | `--review` | Also run `/code-review` (low/medium effort) alongside `reviewer`'s pass, merged into the same finding set. `review-run`: Mode A only, per PR in the batch, sequentially (Skill-invoked, not a parallel Task dispatch). `review-fix`: standalone findings-collection and its own convergence re-check; inherited (not re-asked) when invoked inline. `story-run`: only meaningful with `--bypass` — passed through to the inline `review-run`/`review-fix` the same way. Independent of the `effort` model tier, which only governs this plugin's own agents. |
 | **review-run** | `--fix` | Mode A only (rejected with `--sprint`): after the batch report, run the `review-fix` procedure on each not-clean PR you authored — teammates' PRs and cross-ticket findings stay report-only. |
 | **review-run** | `--post` | Post GitHub reviews (and, Mode A, mirror outcomes to the tracker) without the per-batch confirmation. Without `--post` or that confirmation, nothing external happens at all — no GitHub review, no tracker comment. |
 | **review-run** | `--close` | On SPRINT_READY, open the sprint→main PR (never merges). `branchModel: sprint` only. |

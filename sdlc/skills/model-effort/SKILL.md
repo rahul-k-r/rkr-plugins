@@ -34,15 +34,14 @@ Organized by each agent's High-tier (frontmatter) default — the stable referen
 | `cartographer` | opus | sonnet | sonnet | sonnet | opus |
 | `flow-tracer` | opus | sonnet | sonnet | sonnet | opus |
 | `integrator` | opus | sonnet | sonnet | sonnet | opus |
-| `assessor` | sonnet | haiku | sonnet | sonnet | **opus** |
 | `reviewer` | sonnet | haiku | sonnet | sonnet | **opus** |
 | `planner` | sonnet | haiku | sonnet | sonnet | **opus** |
 | `intake` | sonnet | haiku | sonnet | sonnet | sonnet |
-| `pr-reviewer` | sonnet | haiku | sonnet | sonnet | sonnet |
 | `surveyor` | sonnet | haiku | sonnet | sonnet | sonnet |
 | `validator` | haiku | haiku | haiku | haiku | haiku |
-| `scribe` | haiku | haiku | haiku | haiku | haiku |
 | `publisher` | haiku | haiku | haiku | haiku | haiku |
+
+Batch/final-review verdicts and provenance posting are the orchestrating session's own work (see `story-run.md` 5d and `skills/tracker-adapter/SKILL.md` → Provenance records) — no dispatch, so no row here.
 
 **The rule in words**, for anyone extending this table later (a new agent, a new tier):
 
@@ -50,8 +49,8 @@ Organized by each agent's High-tier (frontmatter) default — the stable referen
 - **Low** — opus→sonnet only. Sonnet and haiku untouched.
 - **Medium** — opus→sonnet, **except `coder` and `architect`**, which stay opus — they're the two roles every agent file's own rationale singles out as highest-risk (the actual code generation, and the adversarial gate that must out-judge both the plan and the design). Sonnet and haiku untouched.
 - **High** — the shipped defaults. No change from the agent files' own frontmatter.
-- **Extra High** — `coder`/`architect` step up to fable (the two highest-stakes roles get the best model available). `assessor`, `reviewer`, and `planner` step up from sonnet to opus — the three sonnet roles where a stronger model most changes the actual outcome (loop control, the thing that actually catches bugs in a diff, and decomposition quality that cascades into everything downstream) rather than just thoroughness/fidelity work. `intake`, `pr-reviewer`, `surveyor` hold at sonnet even here — their jobs lean on completeness and accurate extraction more than judgment calls a bigger model changes.
-- **`validator`, `scribe`, `publisher` never move, at any tier.** They're mechanical — run commands and classify pass/fail, post a templated record, execute an already-approved manifest. There's no judgment surface for a bigger model to improve.
+- **Extra High** — `coder`/`architect` step up to fable (the two highest-stakes roles get the best model available). `reviewer` and `planner` step up from sonnet to opus — the two sonnet roles where a stronger model most changes the actual outcome (the thing that actually catches bugs in a diff, and decomposition quality that cascades into everything downstream) rather than just thoroughness/fidelity work. `intake`, `surveyor` hold at sonnet even here — their jobs lean on completeness and accurate extraction more than judgment calls a bigger model changes.
+- **`validator`, `publisher` never move, at any tier.** They're mechanical — run commands and classify pass/fail, execute an already-approved manifest. There's no judgment surface for a bigger model to improve.
 
 ## Which commands this applies to
 

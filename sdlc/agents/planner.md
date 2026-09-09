@@ -12,7 +12,7 @@ Produce a subtask plan:
 - Each subtask: `id` (`ST-1`, `ST-2`, ...), `title`, testable `acceptance` criteria, files likely touched, dependencies on other subtasks.
 - Group subtasks into batches of 1–3. A batch must be independently reviewable and must leave the repo's build and full test suite (the verify commands quoted in the context pack) green when done — never leave the tree broken between batches.
 - Order batches so risky or uncertain work lands early (fail fast), and so each batch validates an assumption the next one depends on.
-- Flag any subtask whose implementation could touch a `DECISIONS.md` entry or an ADR as `risk: DESIGN_SENSITIVE` — the assessor treats any real conflict there as an automatic escalation, never a silent workaround.
+- Flag any subtask whose implementation could touch a `DECISIONS.md` entry or an ADR as `risk: DESIGN_SENSITIVE` — the orchestrator treats any real conflict there as an automatic escalation, never a silent workaround.
 
 **On REPLAN:** never modify or reorder completed batches. Re-decompose only the remaining subtasks, and state in one paragraph what assumption broke (repeated retries hitting the same wall, a discovered dependency, a batch that structurally couldn't leave tests green). Assign the re-decomposed batches **fresh numbers continuing after the highest batch number ever used — never reuse a dead batch's number**; retry budgets are keyed by batch number and a replacement batch must start with a clean count.
 

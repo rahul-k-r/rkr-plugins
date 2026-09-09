@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// PreToolUse gate restoring per-agent tool scoping for the six sdlc subagents
-// that touch a tracker (intake, pr-reviewer, surveyor, verifier, publisher,
-// scribe) — WITHOUT hardcoding MCP server names anywhere.
+// PreToolUse gate restoring per-agent tool scoping for the four sdlc subagents
+// that touch a tracker (intake, surveyor, verifier, publisher) — WITHOUT
+// hardcoding MCP server names anywhere.
 //
 // Why this exists: a subagent's `tools:` frontmatter can grant one exact
 // server (`mcp__myserver__*`) but has no wildcard across server-name variants
@@ -9,7 +9,7 @@
 // against the platform docs, not inferred). MCP server names are chosen
 // per-project/per-user and can't be enumerated in advance. A hook can only
 // ADD restriction on top of what frontmatter already allows, never grant
-// beyond it — so the only way these six agents can reach an MCP server whose
+// beyond it — so the only way these four agents can reach an MCP server whose
 // name isn't known ahead of time is to carry NO `tools:` field at all (full
 // inheritance). This hook is what keeps that from meaning unrestricted
 // access: it reads `agent_type` + `tool_name` from the PreToolUse payload and
@@ -38,11 +38,9 @@ const FULL_WRITE_OPS = [
 // every scoped agent needs it or it can't reach the ops it's allowed.
 const AGENT_SCOPE = {
   intake: { builtins: ['Read', 'Write', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
-  'pr-reviewer': { builtins: ['Read', 'Grep', 'Glob', 'Bash', 'ToolSearch'], ops: READ_OPS },
   surveyor: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
   verifier: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
   publisher: { builtins: ['Read', 'ToolSearch'], ops: FULL_WRITE_OPS },
-  scribe: { builtins: ['Read', 'Write', 'Edit', 'ToolSearch'], ops: COMMENT_OPS },
 };
 
 let input = '';
@@ -55,7 +53,7 @@ process.stdin.on('end', () => {
     process.exit(0); // unparseable — don't block unrelated work
   }
 
-  // Plugin agents arrive plugin-qualified (`sdlc:scribe`); the table is keyed bare.
+  // Plugin agents arrive plugin-qualified (`sdlc:intake`); the table is keyed bare.
   const agentType = (payload.agent_type || '').split(':').pop();
   const scope = agentType && AGENT_SCOPE[agentType];
   if (!scope) process.exit(0); // orchestrator, or an agent this hook doesn't govern
