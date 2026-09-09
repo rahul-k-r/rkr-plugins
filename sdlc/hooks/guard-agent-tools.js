@@ -26,9 +26,8 @@ const READ_OPS = [
   'searchJiraIssuesUsingJql', 'jira_search',
   'get_issue', 'list_issues',
 ];
-const COMMENT_OPS = ['addCommentToJiraIssue', 'jira_add_comment', 'save_comment'];
 const FULL_WRITE_OPS = [
-  ...COMMENT_OPS,
+  'addCommentToJiraIssue', 'jira_add_comment', 'save_comment',
   'editJiraIssue', 'jira_update_issue',
   'createJiraIssue', 'jira_create_issue',
   'jira_create_issue_link',
@@ -53,8 +52,12 @@ process.stdin.on('end', () => {
     process.exit(0); // unparseable — don't block unrelated work
   }
 
-  // Plugin agents arrive plugin-qualified (`sdlc:intake`); the table is keyed bare.
-  const agentType = (payload.agent_type || '').split(':').pop();
+  // Plugin agents arrive plugin-qualified (`sdlc:intake`); the table is keyed
+  // bare. Strip only this plugin's own prefix — a bare-colon name from some
+  // *other* plugin (e.g. "otherplugin:intake") must never fall through to
+  // matching our "intake" entry.
+  const raw = payload.agent_type || '';
+  const agentType = raw.startsWith('sdlc:') ? raw.slice(5) : raw.includes(':') ? '' : raw;
   const scope = agentType && AGENT_SCOPE[agentType];
   if (!scope) process.exit(0); // orchestrator, or an agent this hook doesn't govern
 

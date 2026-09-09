@@ -36,7 +36,7 @@ The model interaction (the origin of this standard is `plan-the-design`'s Phase 
 
 The orchestrating session is the only thing that talks to the developer, so the flag lives there: subagents (`designer`, `architect`, `coder`, …) are dispatched exactly as today and return their normal technical output — the orchestrator translates when presenting in plain mode. Never dilute a dispatch prompt or an agent's artifact for the flag's sake.
 
-Long-running commands (`story-run`, `design-run`, `review-run`) record `"technical": true|false` in their state file at init (`false` exactly when `--plain` was passed), so `--resume` continues in the same mode without re-passing the flag. At resume, `--plain` overrides a stored `true`; `--technical` overrides a stored `false` — neither is needed just to keep the mode.
+Long-running commands (`story-run`, `design-run`, `review-run`) record `"technical": true|false` in their state file at init (`false` exactly when `--plain` was passed), so `--resume` continues in the same mode without re-passing the flag — passing `--plain` again at resume is harmless, it just reasserts the same value. There is no flag to force a resumed run back to engineer-voice mid-flight; start a fresh run instead if that's genuinely needed.
 
 ## Cascade — the mode follows the run
 
