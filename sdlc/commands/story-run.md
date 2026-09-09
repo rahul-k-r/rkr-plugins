@@ -17,7 +17,7 @@ The run is autonomous by default. It stops and asks the developer (in chat, with
 
 - **Locked-design authority** — any conflict with `DECISIONS.md` or an Accepted ADR, from any agent, at any phase. Never auto-resolved.
 - **ADR-threshold open questions** — decisions the designer or architect judges genuinely contestable (high cost of being wrong, no decisive evidence). Small decisions are made autonomously, recorded with their evidence.
-- **Budget exhaustion** — retries or replans exceeding their caps.
+- **Budget exhaustion** — retries, replans, or framing/design/plan revision cycles exceeding their caps. A further cycle runs only on the developer's recorded authorization, which raises that cap in the state file (see design-run's **Revision budgets**).
 - **Ambiguity it must not guess at** — e.g. the base branch can't be determined unambiguously, or (no-ticket runs) the local key it inferred needs confirming.
 
 Everything else — plan sign-off, batch verdicts, fix decisions, MINOR-finding dispositions — is decided by the pipeline's own reviewers and recorded in the audit trail. Anything decided autonomously that a human might reasonably want to re-examine is **tagged, not buried**: it lands in the final review notes on the PR and the tracker story (or provenance file).
@@ -94,6 +94,7 @@ Two situations land here: an explicit `--incognito` on a repo that has *somethin
      - *Verify commands* from `CLAUDE.md` or stack defaults (Go: `go build ./...` · `go vet ./...` · `go test ./... -race -count=1` · `golangci-lint run`; Python: `ruff check .` · `ruff format --check .` · `mypy .` · `pytest` in the repo's environment; React/Next: `npm run lint` · `npm run typecheck` · `npm test` · `npm run build` with the repo's actual package manager. Mixed repos run every applicable gate). If undocumented, confirm the defaults with the user.
      - *Mandatory repo rules* (the `CLAUDE.md` conventions / Do-NOT sections), quoted verbatim into the context pack.
      - *Branch model* (`sprint`/`direct`) from `.sdlc/config.json` — governs base-branch resolution (Step 1) and the `--bypass` merge guard.
+     - *Panel lenses* from `.sdlc/config.json`'s `lenses` (default `["reliability", "simplicity"]`; `"security"` opt-in) — used only when the DESIGN phase runs autonomously; recorded as `lenses` in state.
      - *Required CI check names* from `CLAUDE.md` (same resolution `review-run`/`story-check` already do) — only needed with `--bypass`, whose CI-wait step (below) polls these by name; confirm with the user if undocumented and `--bypass` was passed.
 
 1. **Story setup.** If a real tracker key resolved in Step 0, fetch the issue (full AC) and confirm it's a real story in the tracker's project and not Done. Otherwise (no-ticket run), skip the fetch — resolve the local key and `local_ac` per **`--incognito` and no-ticket runs** above. Initialize `story-state.json` immediately (phase `DESIGN`, plus `tracker`, `write_mode`, `local_key`) — every later pause needs somewhere to persist, including pauses before any other artifact exists.
@@ -113,14 +114,14 @@ Two situations land here: an explicit `--incognito` on a repo that has *somethin
 
 2. **DESIGN** (`phase: DESIGN`).
    - **A design note from an interactive `/sdlc:plan-the-design` session always wins.** Check `docs/design-notes/<KEY>.md` at its resolved location — the session's own root under `local_docs: true`, `worktree` otherwise (already copied there in Step 1 if it existed only at main). If it exists and passes the substantive checks (§1/§3/§5 filled — same checks as `story-start`), record `design.source: "interactive"` and skip to INTAKE. If it exists but is hollow, stop and tell the developer to finish it — don't silently redesign over a half-deliberated note.
-   - Otherwise, **do what `/sdlc:design-run` does** (it is this phase, standalone — one canonical procedure, defined there): FRAME (designer frames scope + design issues, architect validates the issue list) → DELIBERATE (parallel `panelist` lens panel on high-stakes issues; designer-with-evidence on minor ones) → SYNTHESIZE (consensus rules: convergent → decide with dissents recorded verbatim; split/red-lined on high-stakes, or any locked-decision conflict → escalate to the developer) → DRAFT (full note + ADR scaffolds, written directly under the resolved location above — the `designer`/`architect`/`panelist` dispatches are told that working root explicitly, same as `coder`'s) → `architect` `DESIGN_REVIEW` (revise budget 2, then escalate) → the **design gate** (on by default; `--no-gate design` skips — inline escalations happened regardless).
+   - Otherwise, **do what `/sdlc:design-run` does** (it is this phase, standalone — one canonical procedure, defined there): FRAME (designer frames scope + design issues, architect validates the issue list) → DELIBERATE (parallel `panelist` lens panel — the repo's configured `lenses` — on ADR-threshold issues; designer-with-evidence on every other) → SYNTHESIZE (consensus rules: convergent → decide with dissents recorded verbatim; split/red-lined on a paneled issue, or any locked-decision conflict → escalate to the developer) → DRAFT (full note + ADR scaffolds, written directly under the resolved location above — the `designer`/`architect`/`panelist` dispatches are told that working root explicitly, same as `coder`'s) → `architect` `DESIGN_REVIEW` (budgeted by `budgets.max_design_revisions`, then escalate — see design-run's **Revision budgets**) → the **design gate** (on by default; `--no-gate design` skips — inline escalations happened regardless).
    - On approval: **under `local_docs: false`**, commit the design artifacts yourself — `git -C <worktree> add docs/design-notes/<KEY>.md docs/adr && git -C <worktree> commit -m "<KEY>: add design note (design-run, architect-approved)"` (drop `-C <worktree>` under `--no-worktree`). **Under `local_docs: true`, skip staging/committing entirely** — the files stay on disk at the session's own root, exactly as `skills/local-docs/SKILL.md` describes; there is nothing to add or commit. Either way, record `design.source: "autonomous"` plus the deliberation and review history in the state file. **The design note and any threshold ADRs must exist and be complete before a line of implementation — no exceptions** (committed too, unless `local_docs: true`).
 
 3. **INTAKE** (`phase: INTAKE`). First ensure `docs/stories/.gitignore` exists containing `*` — everything under `docs/stories/` is **untracked working state**, never committed and never part of the story's diff; provenance lives in the tracker comments this run posts (or `provenance.md`, under incognito). Then dispatch `intake` with the story key (or local key + `local_ac`) and project config. It assembles `docs/stories/<KEY>/context-pack.md` read-only. `BLOCKED` (a *referenced* decision/ADR doesn't resolve) → stop and surface exactly what's missing; broken or missing referenced artifacts are never worked around.
 
 4. **PLAN** (`phase: PLAN`). Dispatch `planner` with the context pack; it writes `docs/stories/<KEY>/plan-summary.md` and the `plan` block. Initialize `story-state.json` with the plan.
 
-   **Plan sign-off:** by default, dispatch `architect` with directive `PLAN_REVIEW`. APPROVE → record `gates.plan: {status: APPROVED, mode: architect}` and proceed. REVISE → back to `planner` (2-cycle budget, then escalate). ESCALATE → ask the developer. With `--gate plan`, show `plan-summary.md` to the developer instead and proceed only on explicit approval (`mode: human`). Either way, post the `PLAN_APPROVED` record yourself (`skills/tracker-adapter/SKILL.md` → **Provenance records**) — the plan digest (subtask/batch table, approval mode) — to the tracker story under normal write-mode, to `provenance.md` under incognito; that record is the plan's provenance either way — `plan-summary.md` itself is ephemeral working state.
+   **Plan sign-off:** by default, dispatch `architect` with directive `PLAN_REVIEW`. APPROVE → record `gates.plan: {status: APPROVED, mode: architect}` and proceed. REVISE → back to `planner`, incrementing `budgets.plan_revisions_used`; one that would exceed `max_plan_revisions` is an ESCALATE instead (budget exhaustion — see design-run's **Revision budgets**). ESCALATE → ask the developer. With `--gate plan`, show `plan-summary.md` to the developer instead and proceed only on explicit approval (`mode: human`). Either way, post the `PLAN_APPROVED` record yourself (`skills/tracker-adapter/SKILL.md` → **Provenance records**) — the plan digest (subtask/batch table, approval mode) — to the tracker story under normal write-mode, to `provenance.md` under incognito; that record is the plan's provenance either way — `plan-summary.md` itself is ephemeral working state.
 
 5. **IMPLEMENT LOOP** (`phase: IMPLEMENT`). For the next batch with `status != DONE`:
 
@@ -245,6 +246,7 @@ Once located, read `story-state.json` — and, whenever the `checkpoint` block i
   "provenance_file": "docs/stories/<KEY>/provenance.md — present once write_mode has redirected at least one write there",
   "branch_model": "sprint|direct",
   "effort": "very-low|low|medium|high|extra-high",
+  "lenses": ["reliability", "simplicity"],
   "worktree": "absolute path, or null under --no-worktree",
   "local_docs": false,
   "phase": "DESIGN|INTAKE|PLAN|IMPLEMENT|FINAL_REVIEW|READY_FOR_PR|PR_OPENED|AUTO_REVIEW|AUTO_FIX|AWAITING_CI|MERGED|CLOSED|PAUSED",
@@ -306,7 +308,10 @@ Once located, read `story-state.json` — and, whenever the `checkpoint` block i
   "checkpoint": {"saved_at": null, "phase_substep": null, "pending_question": null, "notes": "docs/stories/<KEY>/checkpoint.md"},
   "budgets": {
     "max_retries_per_batch": 4, "max_replans": 2,
-    "retries_used": {}, "replans_used": 0
+    "retries_used": {}, "replans_used": 0,
+    "max_frame_revisions": 2, "frame_revisions_used": 0,
+    "max_design_revisions": 3, "design_revisions_used": 0,
+    "max_plan_revisions": 2, "plan_revisions_used": 0
   },
   "gates": {
     "design": {"status": "APPROVED|PENDING|SKIPPED", "mode": "human|skipped"},
@@ -322,7 +327,7 @@ Once located, read `story-state.json` — and, whenever the `checkpoint` block i
 
 `retries_used` is keyed by batch number; replans never reuse a number, so a replacement batch always starts at zero.
 
-`schema_version` 5 renamed `batch_results[].assessor_verdict`/`assessor_rationale`/`scribe` to `verdict`/`rationale`/`provenance` and added `final_review.head_sha` and `auto_review.reused_from`. A v4 state file resumes unchanged — the renamed fields are history, never read back; a v4 run entering the `--bypass` tail has no `head_sha`, so it simply runs the full AUTO_REVIEW pass.
+`schema_version` 5 renamed `batch_results[].assessor_verdict`/`assessor_rationale`/`scribe` to `verdict`/`rationale`/`provenance` and added `final_review.head_sha` and `auto_review.reused_from`. A v4 state file resumes unchanged — the renamed fields are history, never read back; a v4 run entering the `--bypass` tail has no `head_sha`, so it simply runs the full AUTO_REVIEW pass. v5 also added `lenses` and the three revision budgets — a v4 state missing them resumes with the defaults above and its counters at 0.
 
 `bypass` is set at Step 1 init from whether `--bypass` was passed — it's what tells `--resume` whether a `PR_OPENED`-or-later state should stop (default) or continue the tail; it's always `false` on an incognito run (rejected together at Step 0). `review` is set the same way from `--review` and read back on `--resume` — it only has an effect when `bypass` is also `true` (see that flag's description above), passed through verbatim to the bypass tail's AUTO_REVIEW/AUTO_FIX steps. `incognito` and `write_mode`/`tracker`/`local_key`/`branch_model` are set the same way from Step 0's resolution and read back on `--resume`. `effort` is resolved once at Step 0 per `skills/model-effort/SKILL.md` and read back (not re-resolved) on `--resume` — passing `--effort` again is harmless, and unlike `write_mode` there's no correctness reason to forbid changing it mid-run if you deliberately want to. `worktree` is set at Step 1 per `skills/worktree-mode/SKILL.md` and never changes for the life of the run; `local_docs` is set the same way from Step 0's resolution per `skills/local-docs/SKILL.md` and likewise never changes. `technical` is set the same way from `--technical` and read back on `--resume` so the run keeps its output voice across sessions (see `skills/plain-language/STANDARD.md`). `dispatches` is always appended to, regardless of `--show-stats` — that flag only gates auto-publishing the Artifact, not collection (see **Usage statistics**). `auto_review` and `merge` are populated only by the `--bypass` tail; both stay null on an ordinary run (always null on an incognito run, since bypass is unreachable there).
 
@@ -334,7 +339,7 @@ The table below is the `high`-tier default — what every agent's own frontmatte
 |-------|-------|-----|
 | `designer` | `opus` | Autonomous design decisions — the highest-stakes judgment in the run. |
 | `architect` | `opus` | The adversarial check on those decisions and on the plan; must out-judge what it reviews. |
-| `panelist` | `opus` | Lens-panel deliberation on high-stakes design issues (via the design-run procedure). |
+| `panelist` | `opus` | Lens-panel deliberation on ADR-threshold design issues (via the design-run procedure). |
 | `coder` | `opus` | The implementation itself — highest-risk generation step. |
 | `intake` | `sonnet` | Mostly mechanical, but inexact quoting corrupts everything downstream. |
 | `planner` | `sonnet` | Batch decomposition and ordering is a real judgment call. |

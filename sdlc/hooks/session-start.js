@@ -5,8 +5,7 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-
-const DONE = new Set(['PR_OPENED', 'PUBLISHED', 'CLOSED']);
+const { PHASES, DONE } = require('./phases');
 
 let input = '';
 process.stdin.on('data', (d) => (input += d));
@@ -43,7 +42,16 @@ process.stdin.on('end', () => {
         lines.push(`- ${key}: story-state.json is UNPARSEABLE — the audit trail is corrupted; inspect it before resuming.`);
         continue;
       }
-      if (!s || !s.phase || DONE.has(s.phase)) continue;
+      if (!s || !s.phase) continue;
+      if (!PHASES.has(s.phase)) {
+        // Only a write that bypassed validate-state.js (a Bash-side write) gets here.
+        lines.push(
+          `- ${s.story_key || key}: phase "${s.phase}" is not a legal phase — the state file is corrupt; ` +
+            `set it to the real terminal phase (CLOSED / PR_OPENED / PUBLISHED) or the phase to resume from before trusting it.`
+        );
+        continue;
+      }
+      if (DONE.has(s.phase)) continue;
       if (s.phase === 'PAUSED') {
         const q = (s.escalations || []).filter((e) => e && !e.decision).pop();
         lines.push(

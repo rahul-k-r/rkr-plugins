@@ -31,11 +31,11 @@ Arguments arrive as `$ARGUMENTS`:
 
 | Command | Use it to | Usage |
 |---------|-----------|-------|
-| **/sdlc:init** | Bootstrap a repo for this workflow: `docs/design-notes/`, `docs/adr/`, template, process pointer, and `.sdlc/config.json` (tracker + branch model + effort + local docs). Idempotent. | `/sdlc:init` |
+| **/sdlc:init** | Bootstrap a repo for this workflow: `docs/design-notes/`, `docs/adr/`, template, process pointer, and `.sdlc/config.json` (tracker + branch model + effort + local docs + panel lenses). Idempotent. | `/sdlc:init` |
 | **/sdlc:plan-the-design** | Deliberate a story's design interactively (the developer reasons, the note records) and write `docs/design-notes/<KEY>.md`. | `/sdlc:plan-the-design <KEY>` |
 | **/sdlc:design-review** | Critique and deepen an existing design note against the Q1–Q7 protocol — reviews, never modifies. | `/sdlc:design-review <KEY>` |
 | **/sdlc:adr** | Scaffold an Architecture Decision Record when a decision crosses the ADR threshold (smaller locked choices → `DECISIONS.md`). | `/sdlc:adr [title]` |
-| **/sdlc:design-run** | Design a story autonomously: designer frames the issues, a three-lens expert panel deliberates the high-stakes ones, architect adversarially reviews, one human gate on the finished note. Interactive `plan-the-design` notes always win. | `/sdlc:design-run <KEY> [--worktree <path> \| --no-worktree] [--effort <tier>]` |
+| **/sdlc:design-run** | Design a story autonomously: designer frames the issues, a lens panel (two lenses by default) deliberates the ADR-threshold ones, architect adversarially reviews within a counted revision budget, one human gate on the finished note. Interactive `plan-the-design` notes always win. | `/sdlc:design-run <KEY> [--worktree <path> \| --no-worktree] [--effort <tier>]` |
 
 ### Story lifecycle — pick up, build, ship, close (roughly in order)
 
@@ -86,6 +86,7 @@ Not applicable under `branchModel: direct` — story PRs merge straight to `main
 - **Effort tiering: also configured per repo, optional.** `.sdlc/config.json`'s `effort` (`very-low|low|medium|high|extra-high`, default `high`) sets which model tier every subagent dispatch runs at; `/sdlc:story-run`'s `--effort <tier>` overrides it for a single run. `/sdlc:init` asks and persists this alongside tracker/branch model. Full resolution order and the per-agent tier table: `skills/model-effort/SKILL.md`.
 - **Worktree isolation: no config needed, resolved per run.** `/sdlc:story-run` and `/sdlc:story-start` isolate a story's git/file work in its own `git worktree` by default; `--worktree <path>` targets an existing one instead of creating it, `--no-worktree` works directly in the current checkout. Full resolution, fallback, and recovery logic: `skills/worktree-mode/SKILL.md`.
 - **Local docs: no config default needed, opt-in per repo.** `.sdlc/config.json`'s `localDocs` (default `false`) — `true` means design notes/ADRs are written but never staged or committed, staying local-only forever. Full resolution and behavior: `skills/local-docs/SKILL.md`.
+- **Panel lenses: configured per repo, optional.** `.sdlc/config.json`'s `lenses` (default `["reliability", "simplicity"]`; add `"security"` to opt in) — which perspectives `design-run`'s panel argues on ADR-threshold issues. `/sdlc:init` asks. What each lens covers: `agents/panelist.md`.
 - **Node.js on PATH** — powers the push/PR gate hook.
 - **`gh` authenticated** — PR commands stop and ask for `gh auth login` otherwise.
 - **Target repo's `CLAUDE.md`** should document: tracker project key (Jira project key, or Linear team prefix — read directly off issue keys, nothing to ask separately), branch/commit conventions, verify (build/test/lint) commands, required CI check names, and any tracker custom-field IDs. Commands fall back to stack defaults and ask when these are missing.
@@ -109,7 +110,7 @@ If a gate denies unexpectedly, the story's state regressed — investigate via `
 |-------|-------|------|
 | `designer` | opus | Frames, deliberates, and drafts the design note autonomously when none exists (interactive notes always win). |
 | `architect` | opus | Principal-architect adversarial review of the design issues, note, and implementation plan. |
-| `panelist` | opus | One lens on the design panel (reliability/failure, security/data-boundary, simplicity/operability) — argues high-stakes issues with evidence and red lines. |
+| `panelist` | opus | One lens on the design panel (reliability/failure and simplicity/operability by default; security/data-boundary opt-in per repo) — argues ADR-threshold issues with evidence and red lines. |
 | `integrator` | opus | (review-run) Audits the seams between PRs or a sprint's aggregate diff: contract drift, unmet obligations, merge order, integration gaps. |
 | `intake` | sonnet | Assembles the read-only context pack; blocks on broken decision/ADR references. |
 | `planner` | sonnet | Decomposes the story into batched, testable subtasks. |
