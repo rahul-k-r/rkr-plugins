@@ -118,3 +118,39 @@ edited. The elaborate per-role, per-operation scoping `guard-agent-tools.js` giv
 (built specifically to avoid hardcoding MCP server names — see `skills/tracker-adapter/SKILL.md`)
 has no current Antigravity equivalent. This is a real, load-bearing gap to be upfront about, not
 something to paper over with a weaker-but-still-real substitute — there currently isn't one.
+
+## How to translate a Task dispatch (the rule every `agy-*` command wrapper points to)
+
+The 5 subagent-dispatching commands (`design-run`, `product-design-review`, `review-fix`,
+`review-run`, `story-run`) each say "dispatch `<agent>` via the Task tool" many times throughout
+a long file — adapting every call site individually in each file would duplicate content this
+whole port has otherwise avoided. Instead, every `agy-*` wrapper for these 5 states this rule
+once and trusts the invoking session to apply it consistently wherever the underlying
+`commands/*.md` says "dispatch":
+
+> Wherever the file says "dispatch `<agent>` [in some mode]", do this instead of using a Task
+> tool (which doesn't exist here): call `invoke_subagent` with one `Subagents` entry —
+> `TypeName: "self"` (or `"research"` if the agent's job is strictly read-only — check
+> `agents/<agent>.md`'s own tool description), `Role`: a short 2-5 word title for the job,
+> `Model`: the tier-resolved key from `skills/gemini-model-effort/SKILL.md`'s table for that
+> agent and the run's resolved effort tier, `Prompt`: the **full verbatim content of
+> `agents/<agent>.md`**, followed by the specific per-dispatch task/context the original file
+> describes passing, `Workspace: "inherit"` unless the file says otherwise. Everything else about
+> the step — what the dispatch is for, how its output is used, escalation/revise-budget rules —
+> applies completely unchanged.
+
+Two things every one of these 5 files also does that need a stated, not silently-applied,
+translation:
+
+- **`EnterWorktree` doesn't exist under Antigravity.** Every mention of "this session never calls
+  `EnterWorktree`" is Claude-Code-specific trivia about a tool that isn't present here — treat it
+  as inapplicable, not as an instruction to find an equivalent. Antigravity's own per-subagent
+  `Workspace` field (`"inherit"|"branch"|"share"`) is the closest analog, already covered above.
+- **The `--show-stats` Artifact-publish step is unconfirmed, not ported.** Every one of these
+  files says to "publish it via the Artifact tool" (loading Claude's own built-in
+  `artifact-design`/`dataviz` skills first) for the rendered HTML usage report. **No equivalent
+  has been confirmed to exist under Antigravity** — not tested, not found in docs. Until it is,
+  treat `--show-stats`'s auto-publish behavior as unavailable: still collect `dispatches[]` and
+  still write the local JSON snapshot exactly as described (nothing about that depends on the
+  Artifact tool), but skip the publish step and tell the developer the rendered-report feature
+  isn't available on this harness yet, rather than silently failing or guessing at a substitute.
