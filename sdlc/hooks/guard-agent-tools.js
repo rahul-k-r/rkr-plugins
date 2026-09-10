@@ -37,7 +37,7 @@ const FULL_WRITE_OPS = [
 // every scoped agent needs it or it can't reach the ops it's allowed.
 const AGENT_SCOPE = {
   intake: { builtins: ['Read', 'Write', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
-  surveyor: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
+  surveyor: { builtins: ['Read', 'Write', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
   verifier: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
   publisher: { builtins: ['Read', 'ToolSearch'], ops: FULL_WRITE_OPS },
 };
