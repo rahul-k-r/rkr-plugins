@@ -34,6 +34,7 @@ const path = require('path');
 
 function extractCommand(payload) {
   return (
+    payload.toolCall?.args?.CommandLine ||
     payload.tool_input?.command ||
     payload.args?.command ||
     payload.args?.Command ||
@@ -45,10 +46,12 @@ function extractCommand(payload) {
 
 function extractCwd(payload, fallback) {
   return (
+    payload.toolCall?.args?.Cwd ||
     payload.cwd ||
     payload.args?.cwd ||
     payload.args?.Cwd ||
     payload.workspace ||
+    (payload.workspacePaths && payload.workspacePaths[0]) ||
     fallback
   );
 }

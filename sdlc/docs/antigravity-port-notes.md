@@ -115,46 +115,64 @@ edited. The elaborate per-role, per-operation scoping `guard-agent-tools.js` giv
 has no current Antigravity equivalent. This is a real, load-bearing gap to be upfront about, not
 something to paper over with a weaker-but-still-real substitute — there currently isn't one.
 
-## How to translate a Task dispatch (the rule every `agy-*` command wrapper points to)
+## Skill naming and invocations (No `agy-` prefix)
+
+Skills exposed by the plugin are placed directly in `skills/<command-name>/SKILL.md` (e.g. `skills/story-run/SKILL.md`).
+Under Antigravity, they are namespaced as `sdlc:<command-name>` and invoked as:
+- `/sdlc:story-run` (canonical namespaced command)
+- `/story-run` (unqualified command)
+
+Claude Code continues to discover slash commands via `commands/*.md` (`commands/story-run.md`), ensuring full backward compatibility for Claude Code without breaking or duplicating logic.
+
+## Hook Payloads (Confirmed Empirically)
+
+Hook payloads passed to stdin on `PreToolUse` events contain:
+```json
+{
+  "conversationId": "...",
+  "stepIdx": 540,
+  "modelName": "...",
+  "workspacePaths": ["c:/path/to/workspace"],
+  "transcriptPath": "...",
+  "artifactDirectoryPath": "...",
+  "toolCall": {
+    "name": "run_command",
+    "args": {
+      "CommandLine": "git status",
+      "Cwd": "c:\\path\\to\\workspace",
+      "WaitMsBeforeAsync": 5000
+    }
+  }
+}
+```
+Hooks parse `payload.toolCall.args.CommandLine` for command strings and `payload.toolCall.args.Cwd` for working directories. Tool names are `payload.toolCall.name` (`run_command`, `view_file`, `write_to_file`, `replace_file_content`, `grep_search`, `find_by_name`, `list_dir`, `ask_question`, `call_mcp_tool`).
+
+## How to translate a Task dispatch (the rule skill wrappers point to)
 
 The 5 subagent-dispatching commands (`design-run`, `product-design-review`, `review-fix`,
 `review-run`, `story-run`) each say "dispatch `<agent>` via the Task tool" many times throughout
 a long file — adapting every call site individually in each file would duplicate content this
-whole port has otherwise avoided. Instead, every `agy-*` wrapper for these 5 states this rule
+whole port has otherwise avoided. Instead, every wrapper for these 5 states this rule
 once and trusts the invoking session to apply it consistently wherever the underlying
 `commands/*.md` says "dispatch":
 
 > Wherever the file says "dispatch `<agent>` [in some mode]", do this instead of using a Task
 > tool (which doesn't exist here): call `invoke_subagent` with one `Subagents` entry —
 > `TypeName: "self"` (or `"research"` if the agent's job is strictly read-only — check
-> `agents/<agent>.md`'s own tool description), `Role`: a short 2-5 word title for the job,
+> `agents/<agent>.md`'s own tool description), `Role`: the exact agent name (e.g. `Role: "designer"`),
 > `Model`: the tier-resolved key from `skills/gemini-model-effort/SKILL.md`'s table for that
 > agent and the run's resolved effort tier, `Prompt`: the **full verbatim content of
-> `agents/<agent>.md`**, followed by the specific per-dispatch task/context the original file
+> `agents/<agent>.md`** (resolved from the plugin root), followed by the specific per-dispatch task/context the original file
 > describes passing, `Workspace: "inherit"` unless the file says otherwise. Everything else about
 > the step — what the dispatch is for, how its output is used, escalation/revise-budget rules —
 > applies completely unchanged.
->
-> **One exception to the free-text `Role`:** for the four tracker-touching agents — `intake`,
-> `surveyor`, `verifier`, `publisher` — set `Role` to **exactly the agent's own name**, lowercase,
-> nothing else appended (e.g. `Role: "publisher"`, not `Role: "Tracker Write Executor"`).
-> `hooks-antigravity/guard-agent-tools.js` (see below) has no way to identify which agent is
-> calling a tool other than matching this field verbatim — a descriptive title would make its
-> scoping silently inert for that dispatch. Every other agent keeps a free-text `Role`, since
-> nothing keys off it.
 
-Two things every one of these 5 files also does that need a stated, not silently-applied,
-translation:
+Two things every one of these 5 files also does:
 
 - **`EnterWorktree` doesn't exist under Antigravity.** Every mention of "this session never calls
   `EnterWorktree`" is Claude-Code-specific trivia about a tool that isn't present here — treat it
   as inapplicable, not as an instruction to find an equivalent. Antigravity's own per-subagent
   `Workspace` field (`"inherit"|"branch"|"share"`) is the closest analog, already covered above.
-- **The `--show-stats` Artifact-publish step is unconfirmed, not ported.** Every one of these
-  files says to "publish it via the Artifact tool" (loading Claude's own built-in
-  `artifact-design`/`dataviz` skills first) for the rendered HTML usage report. **No equivalent
-  has been confirmed to exist under Antigravity** — not tested, not found in docs. Until it is,
-  treat `--show-stats`'s auto-publish behavior as unavailable: still collect `dispatches[]` and
-  still write the local JSON snapshot exactly as described (nothing about that depends on the
-  Artifact tool), but skip the publish step and tell the developer the rendered-report feature
-  isn't available on this harness yet, rather than silently failing or guessing at a substitute.
+- **The `--show-stats` Artifact report.** Antigravity natively supports Artifacts (`<artifactDirectoryPath>`)
+  and rich HTML widgets via `generative_ui`. Under `--show-stats`, render `skills/run-stats/template.html`
+  filled with data and output it to the artifact directory.

@@ -58,10 +58,49 @@ const FULL_WRITE_OPS = [
 ];
 
 const AGENT_SCOPE = {
-  intake: { builtins: ['Read', 'Write', 'Grep', 'Glob'], ops: READ_OPS },
-  surveyor: { builtins: ['Read', 'Write', 'Grep', 'Glob'], ops: READ_OPS },
-  verifier: { builtins: ['Read', 'Grep', 'Glob'], ops: READ_OPS },
-  publisher: { builtins: ['Read'], ops: FULL_WRITE_OPS },
+  intake: {
+    builtins: [
+      'view_file',
+      'write_to_file',
+      'replace_file_content',
+      'grep_search',
+      'find_by_name',
+      'list_dir',
+      'Read',
+      'Write',
+      'Grep',
+      'Glob',
+    ],
+    ops: READ_OPS,
+  },
+  surveyor: {
+    builtins: [
+      'view_file',
+      'write_to_file',
+      'replace_file_content',
+      'grep_search',
+      'find_by_name',
+      'list_dir',
+      'Read',
+      'Write',
+      'Grep',
+      'Glob',
+    ],
+    ops: READ_OPS,
+  },
+  verifier: {
+    builtins: [
+      'view_file',
+      'grep_search',
+      'find_by_name',
+      'list_dir',
+      'Read',
+      'Grep',
+      'Glob',
+    ],
+    ops: READ_OPS,
+  },
+  publisher: { builtins: ['view_file', 'Read'], ops: FULL_WRITE_OPS },
 };
 
 // A value observed as a JSON-encoded string (e.g. `"\"get_workspace\""`) unwraps to its plain
@@ -82,14 +121,14 @@ function extractRole(payload) {
 }
 
 function extractToolName(payload) {
-  return payload.tool_name || payload.name || payload.tool || '';
+  return payload.toolCall?.name || payload.tool_name || payload.name || payload.tool || '';
 }
 
 // Returns the operation name if this call is an MCP dispatch this hook can reason about, else
 // null. Handles both confirmed naming shapes.
 function mcpOperation(toolName, payload) {
   if (toolName === 'call_mcp_tool') {
-    const args = payload.tool_input || payload.args || {};
+    const args = payload.toolCall?.args || payload.tool_input || payload.args || {};
     const op = unwrap(args.ToolName ?? args.toolName ?? args.tool_name);
     return op || null;
   }
