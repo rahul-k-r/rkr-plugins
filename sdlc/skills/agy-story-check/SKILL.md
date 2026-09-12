@@ -6,7 +6,7 @@ description: Antigravity-invocable form of /sdlc:story-check — verify a story 
 # /agy-story-check
 
 Read `commands/story-check.md` in full and follow its steps exactly, verbatim — this file
-carries no separate instructions of its own. Arguments (`[STORY-KEY] [--technical]`) are passed
+carries no separate instructions of its own. Arguments (`[STORY-KEY] [--plain]`) are passed
 through identically to how `commands/story-check.md` describes reading them from `$ARGUMENTS`.
 
 Every path it references is relative to this same plugin root and resolves identically under

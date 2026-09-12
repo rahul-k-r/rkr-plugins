@@ -10,10 +10,11 @@ Read `commands/story-run.md` in full and follow its steps exactly, verbatim, **e
 1. Every "dispatch `<agent>`" — translate per `docs/antigravity-port-notes.md`'s **"How to
    translate a Task dispatch"** section (`invoke_subagent`, persona injected into `Prompt`, model
    from `skills/gemini-model-effort/SKILL.md`). Applies to every `designer`, `architect`,
-   `panelist`, `coder`, `intake`, `planner`, `reviewer`, `assessor`, `validator`, `scribe`,
-   `pr-reviewer` dispatch throughout — including the inline `design-run`/`review-run`/`review-fix`
-   procedures this file invokes for the DESIGN phase and the `--bypass` tail; those follow
-   `agy-design-run`/`agy-review-run`/`agy-review-fix`'s own translations, not a re-derivation here.
+   `panelist`, `coder`, `intake`, `planner`, `reviewer`, `validator` dispatch throughout —
+   including the `reviewer` (PR-mode) dispatch(es) in the `--bypass` tail's AUTO_REVIEW/AUTO_FIX
+   steps, and the inline `design-run`/`review-run`/`review-fix` procedures this file invokes for
+   the DESIGN phase and the `--bypass` tail; those follow `agy-design-run`/`agy-review-run`/
+   `agy-review-fix`'s own translations, not a re-derivation here.
 2. **Effort/model resolution** — use `skills/gemini-model-effort/SKILL.md` in place of
    `skills/model-effort/SKILL.md`. Its own "Model tiering" table translates as:
 
@@ -25,11 +26,8 @@ Read `commands/story-run.md` in full and follow its steps exactly, verbatim, **e
    | `coder` = opus | `pro` |
    | `intake` = sonnet | `flash` |
    | `planner` = sonnet | `flash` |
-   | `reviewer` = sonnet | `flash` |
-   | `assessor` = sonnet | `flash` |
+   | `reviewer` = sonnet (also the `--bypass` tail's PR-mode dispatch) | `flash` |
    | `validator` = haiku | `flash_lite` |
-   | `scribe` = haiku | `flash_lite` |
-   | `pr-reviewer` = sonnet (`--bypass` only) | `flash` |
 
    For any other effort tier, read `skills/gemini-model-effort/SKILL.md`'s table directly.
 3. **`EnterWorktree` mentions are inapplicable** — Antigravity has no such tool; ignore those

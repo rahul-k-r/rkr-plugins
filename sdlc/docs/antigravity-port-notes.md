@@ -135,13 +135,13 @@ once and trusts the invoking session to apply it consistently wherever the under
 > the step — what the dispatch is for, how its output is used, escalation/revise-budget rules —
 > applies completely unchanged.
 >
-> **One exception to the free-text `Role`:** for the six tracker-touching agents — `intake`,
-> `pr-reviewer`, `surveyor`, `verifier`, `publisher`, `scribe` — set `Role` to **exactly the
-> agent's own name**, lowercase, nothing else appended (e.g. `Role: "scribe"`, not `Role: "Tracker
-> Comment Poster"`). `hooks-antigravity/guard-agent-tools.js` (see below) has no way to identify
-> which agent is calling a tool other than matching this field verbatim — a descriptive title
-> would make its scoping silently inert for that dispatch. Every other agent keeps a free-text
-> `Role`, since nothing keys off it.
+> **One exception to the free-text `Role`:** for the four tracker-touching agents — `intake`,
+> `surveyor`, `verifier`, `publisher` — set `Role` to **exactly the agent's own name**, lowercase,
+> nothing else appended (e.g. `Role: "publisher"`, not `Role: "Tracker Write Executor"`).
+> `hooks-antigravity/guard-agent-tools.js` (see below) has no way to identify which agent is
+> calling a tool other than matching this field verbatim — a descriptive title would make its
+> scoping silently inert for that dispatch. Every other agent keeps a free-text `Role`, since
+> nothing keys off it.
 
 Two things every one of these 5 files also does that need a stated, not silently-applied,
 translation:

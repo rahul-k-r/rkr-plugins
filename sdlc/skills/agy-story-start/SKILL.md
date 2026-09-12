@@ -7,7 +7,7 @@ description: Antigravity-invocable form of /sdlc:story-start — gate check befo
 
 Read `commands/story-start.md` in full and follow its steps exactly, verbatim — this file
 carries no separate instructions of its own. Arguments (`<STORY-KEY> [--worktree <path> |
---no-worktree] [--incognito] [--technical]`) are passed through identically to how
+--no-worktree] [--incognito] [--plain]`) are passed through identically to how
 `commands/story-start.md` describes reading them from `$ARGUMENTS`.
 
 Every path it references is relative to this same plugin root and resolves identically under

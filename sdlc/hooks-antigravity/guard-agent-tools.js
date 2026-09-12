@@ -7,7 +7,7 @@
 //      file only does anything once manually installed into the user's global
 //      ~/.gemini/config/hooks.json (see skills/agy-install-hooks/SKILL.md).
 //   2. Agent identity relies on the dispatching wrapper setting `Role` to the agent's exact
-//      lowercase name for the six agents this hook governs (see antigravity-port-notes.md's
+//      lowercase name for the four agents this hook governs (see antigravity-port-notes.md's
 //      "How to translate a Task dispatch" — the one exception to free-text Role). If a dispatch
 //      sets Role to anything else, this hook has NO way to identify it and will treat the call
 //      as ungoverned (allowed) rather than denied — a silent fail-open, not fail-closed, for
@@ -16,10 +16,9 @@
 //      prompt author.
 //
 // Policy (identical to hooks/guard-agent-tools.js — keep both in sync manually):
-//   intake, pr-reviewer, surveyor, verifier, publisher, scribe each get a fixed set of built-in
-//   tools plus a fixed set of tracker READ/COMMENT/WRITE operations, matched by OPERATION name
-//   on ANY MCP server — never by server name, so a new project's differently-named tracker
-//   connection never needs an edit here.
+//   intake, surveyor, verifier, publisher each get a fixed set of built-in tools plus a fixed set
+//   of tracker READ/WRITE operations, matched by OPERATION name on ANY MCP server — never by
+//   server name, so a new project's differently-named tracker connection never needs an edit here.
 //
 // MCP naming (confirmed against real Antigravity transcripts, 2026-09-08 — see the notes doc):
 //   - Lazy-loaded servers (the default) dispatch through one fixed tool, `call_mcp_tool`, with
@@ -60,11 +59,9 @@ const FULL_WRITE_OPS = [
 
 const AGENT_SCOPE = {
   intake: { builtins: ['Read', 'Write', 'Grep', 'Glob'], ops: READ_OPS },
-  'pr-reviewer': { builtins: ['Read', 'Grep', 'Glob', 'run_command'], ops: READ_OPS },
-  surveyor: { builtins: ['Read', 'Grep', 'Glob'], ops: READ_OPS },
+  surveyor: { builtins: ['Read', 'Write', 'Grep', 'Glob'], ops: READ_OPS },
   verifier: { builtins: ['Read', 'Grep', 'Glob'], ops: READ_OPS },
   publisher: { builtins: ['Read'], ops: FULL_WRITE_OPS },
-  scribe: { builtins: ['Read', 'Write', 'Edit'], ops: COMMENT_OPS },
 };
 
 // A value observed as a JSON-encoded string (e.g. `"\"get_workspace\""`) unwraps to its plain

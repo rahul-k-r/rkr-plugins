@@ -9,17 +9,16 @@ Read `commands/review-fix.md` in full and follow its steps exactly, verbatim, **
 
 1. Every "dispatch `<agent>`" — translate per `docs/antigravity-port-notes.md`'s **"How to
    translate a Task dispatch"** section (`invoke_subagent`, persona injected into `Prompt`, model
-   from `skills/gemini-model-effort/SKILL.md`). Applies to every `assessor`, `coder`, `validator`,
-   `pr-reviewer` dispatch throughout.
+   from `skills/gemini-model-effort/SKILL.md`). Applies to every `coder`, `validator`, `reviewer`
+   (PR mode) dispatch throughout.
 2. **Effort/model resolution** — use `skills/gemini-model-effort/SKILL.md` in place of
    `skills/model-effort/SKILL.md`. Its own "Model tiering" table translates as:
 
    | This file says | Use instead |
    |---|---|
-   | `assessor` = sonnet | `flash` |
    | `coder` = opus | `pro` |
    | `validator` = haiku | `flash_lite` |
-   | `pr-reviewer` = sonnet | `flash` |
+   | `reviewer` = sonnet | `flash` |
 
    For any other effort tier, read `skills/gemini-model-effort/SKILL.md`'s table directly.
 3. **`--show-stats`'s Artifact-publish step is unavailable, not ported** — still collect and

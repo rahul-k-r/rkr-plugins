@@ -6,7 +6,7 @@ description: Antigravity-invocable form of /sdlc:sprint-pr — open the end-of-w
 # /agy-sprint-pr
 
 Read `commands/sprint-pr.md` in full and follow its steps exactly, verbatim — this file carries
-no separate instructions of its own. Arguments (`[sprint-id] [--technical]`) are passed through
+no separate instructions of its own. Arguments (`[sprint-id] [--plain]`) are passed through
 identically to how `commands/sprint-pr.md` describes reading them from `$ARGUMENTS`. Only
 meaningful for a repo configured `branchModel: sprint` — `commands/sprint-pr.md`'s own
 `direct`-model no-op behavior applies unchanged.

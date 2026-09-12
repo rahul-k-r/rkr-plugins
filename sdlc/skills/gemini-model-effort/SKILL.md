@@ -92,15 +92,16 @@ Claude table. Cell values are the literal `Model` string to pass.
 | `cartographer` | `pro` | `flash` | `flash` | `flash` | `pro` |
 | `flow-tracer` | `pro` | `flash` | `flash` | `flash` | `pro` |
 | `integrator` | `pro` | `flash` | `flash` | `flash` | `pro` |
-| `assessor` | `flash` | `flash_lite` | `flash` | `flash` | **`pro`** |
 | `reviewer` | `flash` | `flash_lite` | `flash` | `flash` | **`pro`** |
 | `planner` | `flash` | `flash_lite` | `flash` | `flash` | **`pro`** |
 | `intake` | `flash` | `flash_lite` | `flash` | `flash` | `flash` |
-| `pr-reviewer` | `flash` | `flash_lite` | `flash` | `flash` | `flash` |
 | `surveyor` | `flash` | `flash_lite` | `flash` | `flash` | `flash` |
 | `validator` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` |
-| `scribe` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` |
 | `publisher` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` |
+
+Batch/final-review verdicts and provenance posting are the orchestrating session's own work (see
+`story-run.md` 5d and `skills/tracker-adapter/SKILL.md` → Provenance records) — no dispatch, so no
+row here.
 
 **The rule in words** — identical to the Claude table, only the tier names differ:
 
@@ -113,11 +114,12 @@ Claude table. Cell values are the literal `Model` string to pass.
 - **High** — the shipped defaults. No change from the mapping above.
 - **Extra High** — `coder`/`architect` step up to... nowhere; `pro` is already the ceiling this
   API exposes, so they simply hold there (unlike the Claude table, which has `fable` above
-  `opus` to step up into — no such fourth rung exists here). `assessor`, `reviewer`, `planner`
-  step up from `flash` to `pro` — the three flash-default roles where a stronger model most
-  changes the outcome. `intake`, `pr-reviewer`, `surveyor` hold at `flash` even here —
+  `opus` to step up into — no such fourth rung exists here). `reviewer`, `planner`
+  step up from `flash` to `pro` — the two flash-default roles where a stronger model most
+  changes the outcome (the thing that actually catches bugs in a diff, and decomposition quality
+  that cascades into everything downstream). `intake`, `surveyor` hold at `flash` even here —
   completeness/extraction work a bigger model doesn't meaningfully improve.
-- **`validator`, `scribe`, `publisher` never move, at any tier.** Mechanical roles — no judgment
+- **`validator`, `publisher` never move, at any tier.** Mechanical roles — no judgment
   surface for a bigger model to improve.
 
 ## Current recommendation (dated — re-check before trusting)

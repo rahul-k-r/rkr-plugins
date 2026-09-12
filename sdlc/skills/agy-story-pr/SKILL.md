@@ -6,7 +6,7 @@ description: Antigravity-invocable form of /sdlc:story-pr — commit, push the s
 # /agy-story-pr
 
 Read `commands/story-pr.md` in full and follow its steps exactly, verbatim — this file carries
-no separate instructions of its own. Arguments (`[STORY-KEY] [--review] [--fix] [--technical]`)
+no separate instructions of its own. Arguments (`[STORY-KEY] [--review] [--fix] [--plain]`)
 are passed through identically to how `commands/story-pr.md` describes reading them from
 `$ARGUMENTS`.
 

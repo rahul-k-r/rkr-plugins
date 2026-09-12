@@ -6,7 +6,7 @@ description: Antigravity-invocable form of /sdlc:plan-the-design — run the ful
 # /agy-plan-the-design
 
 Read `commands/plan-the-design.md` in full and follow its steps exactly, verbatim — this file
-carries no separate instructions of its own. The argument (`<STORY-KEY> [--technical]`) is
+carries no separate instructions of its own. The argument (`<STORY-KEY> [--plain]`) is
 passed through identically to how `commands/plan-the-design.md` describes reading it from
 `$ARGUMENTS`.
 
