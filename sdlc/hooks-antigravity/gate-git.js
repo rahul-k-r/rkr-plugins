@@ -3,7 +3,7 @@
 // disclosed reliability gap. See ../docs/antigravity-port-notes.md before relying on this in a
 // real repo: Antigravity does not auto-wire a plugin's own hooks.json (confirmed empirically,
 // both IDE and CLI) — this file only does anything once manually installed into the user's
-// global ~/.gemini/config/hooks.json (see skills/agy-install-hooks/SKILL.md). It cannot
+// global ~/.gemini/config/hooks.json (see skills/install-hooks/SKILL.md). It cannot
 // guarantee the same safety Claude Code gets automatically — that's the whole reason the
 // install skill prints a loud warning instead of silently claiming parity.
 //
@@ -155,7 +155,7 @@ process.stdin.on('end', () => {
   ) {
     return deny(
       `refusing to commit directly on "${branch}". Cut a story branch first ` +
-        `(feat|fix|chore/<key-lower>-slug) — see /agy-story-start or /agy-commit. ` +
+        `(feat|fix|chore/<key-lower>-slug) — see /sdlc:story-start or /sdlc:commit. ` +
         `(Merge-resolution commits during an in-progress merge are allowed, and so is a release ` +
         `commit whose staged files are all covered by .sdlc/config.json's "releaseCommitPaths".)`
     );

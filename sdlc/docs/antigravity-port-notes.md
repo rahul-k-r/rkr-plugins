@@ -56,7 +56,7 @@ plugin install can do on its own.
 
 **Decided (2026-09-08): option 1 — ship the hook logic, as a documented manual-install step.**
 `hooks-antigravity/gate-git.js` and `guard-agent-tools.js` carry the same policy as their Claude
-Code originals; `skills/agy-install-hooks/SKILL.md` merges them into the user's global config,
+Code originals; `skills/install-hooks/SKILL.md` merges them into the user's global config,
 with explicit confirmation before writing (it edits a file outside the plugin's own directory)
 and a loud, standing warning that this **cannot guarantee the same safety Claude Code gets
 automatically** — real enforcement, but weaker and with real disclosed gaps (see both hook

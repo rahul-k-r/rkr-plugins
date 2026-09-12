@@ -129,6 +129,10 @@ function install(agyPath) {
 
   console.log('\n==> Installing sdlc plugin into Antigravity...');
   const res = spawnSync(agyPath, ['plugin', 'install', sdlcDir], { stdio: 'inherit' });
+  if (res.error) {
+    console.error(` [ERROR] Failed to launch '${agyPath}': ${res.error.message}`);
+    process.exit(1);
+  }
   if (res.status !== 0) {
     console.error(` [ERROR] 'agy plugin install' exited with code ${res.status}`);
     process.exit(res.status || 1);
@@ -150,7 +154,9 @@ function update(agyPath) {
 function uninstall(agyPath) {
   console.log('\n==> Uninstalling sdlc plugin from Antigravity...');
   const res = spawnSync(agyPath, ['plugin', 'uninstall', 'sdlc'], { stdio: 'inherit' });
-  if (res.status !== 0) {
+  if (res.error) {
+    console.warn(` [WARN] Failed to launch '${agyPath}': ${res.error.message}`);
+  } else if (res.status !== 0) {
     console.warn(` [WARN] 'agy plugin uninstall sdlc' exited with code ${res.status} (plugin may not have been registered).`);
   } else {
     console.log(' [OK] sdlc plugin uninstalled.');

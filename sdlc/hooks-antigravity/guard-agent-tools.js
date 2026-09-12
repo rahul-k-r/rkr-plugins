@@ -5,15 +5,14 @@
 //
 //   1. Plugin hooks.json does not auto-wire under Antigravity (confirmed empirically) — this
 //      file only does anything once manually installed into the user's global
-//      ~/.gemini/config/hooks.json (see skills/agy-install-hooks/SKILL.md).
-//   2. Agent identity relies on the dispatching wrapper setting `Role` to the agent's exact
-//      lowercase name for the four agents this hook governs (see antigravity-port-notes.md's
-//      "How to translate a Task dispatch" — the one exception to free-text Role). If a dispatch
-//      sets Role to anything else, this hook has NO way to identify it and will treat the call
-//      as ungoverned (allowed) rather than denied — a silent fail-open, not fail-closed, for
-//      that one specific failure mode. This is a real, disclosed weaker guarantee than Claude
-//      Code's `agent_type` field, which the platform sets itself and can't be gotten wrong by a
-//      prompt author.
+//      ~/.gemini/config/hooks.json (see skills/install-hooks/SKILL.md).
+//   2. Agent identity relies on the dispatching wrapper setting `Role` to the exact agent name
+//      (see antigravity-port-notes.md's "How to translate a Task dispatch" — every dispatch sets
+//      `Role` this way now, not just the four this hook governs). If a dispatch sets Role to
+//      anything else, this hook has NO way to identify it and will treat the call as ungoverned
+//      (allowed) rather than denied — a silent fail-open, not fail-closed, for that one specific
+//      failure mode. This is a real, disclosed weaker guarantee than Claude Code's `agent_type`
+//      field, which the platform sets itself and can't be gotten wrong by a prompt author.
 //
 // Policy (identical to hooks/guard-agent-tools.js — keep both in sync manually):
 //   intake, surveyor, verifier, publisher each get a fixed set of built-in tools plus a fixed set
@@ -57,49 +56,16 @@ const FULL_WRITE_OPS = [
   'save_issue',
 ];
 
+// Shared builtin sets — intake/surveyor get read+write file access, verifier read-only. Kept as
+// named constants (rather than repeated per-agent) so a platform tool-name correction (see the
+// header's "Also unconfirmed" note) is a one-place edit, same as READ_OPS/FULL_WRITE_OPS above.
+const READ_BUILTINS = ['view_file', 'grep_search', 'find_by_name', 'list_dir', 'Read', 'Grep', 'Glob'];
+const RW_BUILTINS = [...READ_BUILTINS, 'write_to_file', 'replace_file_content', 'Write'];
+
 const AGENT_SCOPE = {
-  intake: {
-    builtins: [
-      'view_file',
-      'write_to_file',
-      'replace_file_content',
-      'grep_search',
-      'find_by_name',
-      'list_dir',
-      'Read',
-      'Write',
-      'Grep',
-      'Glob',
-    ],
-    ops: READ_OPS,
-  },
-  surveyor: {
-    builtins: [
-      'view_file',
-      'write_to_file',
-      'replace_file_content',
-      'grep_search',
-      'find_by_name',
-      'list_dir',
-      'Read',
-      'Write',
-      'Grep',
-      'Glob',
-    ],
-    ops: READ_OPS,
-  },
-  verifier: {
-    builtins: [
-      'view_file',
-      'grep_search',
-      'find_by_name',
-      'list_dir',
-      'Read',
-      'Grep',
-      'Glob',
-    ],
-    ops: READ_OPS,
-  },
+  intake: { builtins: RW_BUILTINS, ops: READ_OPS },
+  surveyor: { builtins: RW_BUILTINS, ops: READ_OPS },
+  verifier: { builtins: READ_BUILTINS, ops: READ_OPS },
   publisher: { builtins: ['view_file', 'Read'], ops: FULL_WRITE_OPS },
 };
 

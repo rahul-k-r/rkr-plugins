@@ -55,8 +55,12 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "sdlc\plugin.json")))
     } catch {
         # Fallback to git clone if archive download fails
         Write-Host "Archive download failed ($($_.Exception.Message)), falling back to git..."
-        git clone --depth 1 "https://github.com/rahul-k-r/rkr-claude-plugins.git" (Join-Path $tempDir "clone") 2>$null
         $sdlcSource = Join-Path $tempDir "clone\sdlc"
+        try {
+            git clone --depth 1 "https://github.com/rahul-k-r/rkr-claude-plugins.git" (Join-Path $tempDir "clone") 2>$null
+        } catch {
+            # git missing or clone failed — fall through to the shared error path below
+        }
         if (-not (Test-Path (Join-Path $sdlcSource "plugin.json"))) {
             Write-Err "Failed to fetch repository."
             if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir }

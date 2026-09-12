@@ -40,7 +40,7 @@ else
         SDLC_SOURCE="$TEMP_DIR/rkr-claude-plugins-main/sdlc"
     else
         echo "Tarball download failed, falling back to git clone..."
-        git clone --depth 1 "https://github.com/rahul-k-r/rkr-claude-plugins.git" "$TEMP_DIR/clone"
+        git clone --depth 1 "https://github.com/rahul-k-r/rkr-claude-plugins.git" "$TEMP_DIR/clone" || true
         SDLC_SOURCE="$TEMP_DIR/clone/sdlc"
     fi
 
