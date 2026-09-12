@@ -33,8 +33,8 @@ as safe as Claude Code's.** It's meaningfully weaker, disclosed on purpose — s
    `hooks-antigravity/` directory in the current install. Confirm both `gate-git.js` and
    `guard-agent-tools.js` exist there.
 
-2. **Read `hooks-antigravity/hooks.json`** (the source config, shipped with the plugin — relative
-   `"command"` values like `"node gate-git.js"`) and **rewrite its two `command` fields to
+2. **Read `hooks.json`** (the canonical source config at plugin root — containing relative
+   `"command"` values like `"node hooks-antigravity/gate-git.js"`) and **rewrite its `command` fields to
    absolute paths** pointing at the files located in Step 1, e.g.
    `"node C:/actual/path/hooks-antigravity/gate-git.js"`. This is required, not cosmetic: once
    merged into the global config, the working directory Antigravity runs a hook command from is

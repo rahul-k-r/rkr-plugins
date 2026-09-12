@@ -56,22 +56,28 @@ echo -e "\n==> Installing sdlc plugin into Antigravity..."
 echo " [OK] sdlc plugin installed successfully."
 
 # Configure safety hooks
-echo -e "\n==> Configuring safety hooks in ~/.gemini/config/hooks.json..."
+echo -e "\n==> Configuring safety hooks from plugin manifest..."
 GEMINI_CONFIG_DIR="$HOME/.gemini/config"
 mkdir -p "$GEMINI_CONFIG_DIR"
 
 HOOKS_FILE="$GEMINI_CONFIG_DIR/hooks.json"
-GATE_GIT="$GEMINI_CONFIG_DIR/plugins/sdlc/hooks-antigravity/gate-git.js"
-GUARD_TOOLS="$GEMINI_CONFIG_DIR/plugins/sdlc/hooks-antigravity/guard-agent-tools.js"
+INSTALLED_PLUGIN_DIR="$GEMINI_CONFIG_DIR/plugins/sdlc"
+SOURCE_HOOKS_FILE="$INSTALLED_PLUGIN_DIR/hooks.json"
 
-# Use python or node to merge hooks.json cleanly
 node - <<EOF
 const fs = require('fs');
 const path = require('path');
 
 const hooksFile = '$HOOKS_FILE';
-let config = {};
+const sourceHooksFile = '$SOURCE_HOOKS_FILE';
+const pluginDir = '$INSTALLED_PLUGIN_DIR';
 
+if (!fs.existsSync(sourceHooksFile)) {
+  console.warn(' [WARN] hooks.json not found in plugin directory; skipping hook registration.');
+  process.exit(0);
+}
+
+let config = {};
 if (fs.existsSync(hooksFile)) {
   try {
     const raw = fs.readFileSync(hooksFile, 'utf8').trim();
@@ -82,32 +88,27 @@ if (fs.existsSync(hooksFile)) {
   }
 }
 
-config['sdlc'] = {
-  enabled: true,
-  PreToolUse: [
-    {
-      matcher: 'run_command',
-      hooks: [
-        {
-          type: 'command',
-          command: 'node "$GATE_GIT"',
-          timeout: 15
-        }
-      ]
-    },
-    {
-      matcher: '.*',
-      hooks: [
-        {
-          type: 'command',
-          command: 'node "$GUARD_TOOLS"',
-          timeout: 15
-        }
-      ]
-    }
-  ]
-};
+const sourceRaw = fs.readFileSync(sourceHooksFile, 'utf8');
+const sourceConfig = JSON.parse(sourceRaw);
+const sdlcDef = sourceConfig.sdlc || sourceConfig;
 
+function resolveCommands(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(resolveCommands);
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === 'command' && typeof value === 'string') {
+      result[key] = value.replace(/node\s+([^\s"]+)/, (match, scriptPath) => {
+        return \`node "\${path.posix.join(pluginDir, scriptPath)}"\`;
+      });
+    } else {
+      result[key] = resolveCommands(value);
+    }
+  }
+  return result;
+}
+
+config['sdlc'] = resolveCommands(sdlcDef);
 fs.writeFileSync(hooksFile, JSON.stringify(config, null, 2), 'utf8');
 EOF
 

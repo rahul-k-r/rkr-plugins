@@ -48,7 +48,7 @@ function getHooksFile() {
   return path.join(getGeminiConfigDir(), 'hooks.json');
 }
 
-function configureHooks() {
+function configureHooks(sdlcDir) {
   const configDir = getGeminiConfigDir();
   if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true });
@@ -69,34 +69,35 @@ function configureHooks() {
     }
   }
 
-  const gateGit = path.join(configDir, 'plugins', 'sdlc', 'hooks-antigravity', 'gate-git.js').replace(/\\/g, '/');
-  const guardTools = path.join(configDir, 'plugins', 'sdlc', 'hooks-antigravity', 'guard-agent-tools.js').replace(/\\/g, '/');
+  const sourceHooksFile = path.join(sdlcDir, 'hooks.json');
+  if (!fs.existsSync(sourceHooksFile)) {
+    console.warn(' [WARN] hooks.json not found in plugin directory; skipping hook registration.');
+    return;
+  }
 
-  hooksConfig['sdlc'] = {
-    enabled: true,
-    PreToolUse: [
-      {
-        matcher: 'run_command',
-        hooks: [
-          {
-            type: 'command',
-            command: `node "${gateGit}"`,
-            timeout: 15
-          }
-        ]
-      },
-      {
-        matcher: '.*',
-        hooks: [
-          {
-            type: 'command',
-            command: `node "${guardTools}"`,
-            timeout: 15
-          }
-        ]
+  const pluginInstalledDir = path.join(configDir, 'plugins', 'sdlc').replace(/\\/g, '/');
+  const sourceRaw = fs.readFileSync(sourceHooksFile, 'utf8');
+  const sourceConfig = JSON.parse(sourceRaw);
+  const sdlcHookDef = sourceConfig.sdlc || sourceConfig;
+
+  function resolveCommands(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(resolveCommands);
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (key === 'command' && typeof value === 'string') {
+        result[key] = value.replace(/node\s+([^\s"]+)/, (match, scriptPath) => {
+          const absoluteScript = path.posix.join(pluginInstalledDir, scriptPath.replace(/\\/g, '/'));
+          return `node "${absoluteScript}"`;
+        });
+      } else {
+        result[key] = resolveCommands(value);
       }
-    ]
-  };
+    }
+    return result;
+  }
+
+  hooksConfig['sdlc'] = resolveCommands(sdlcHookDef);
 
   fs.writeFileSync(hooksFile, JSON.stringify(hooksConfig, null, 2), 'utf8');
   console.log(' [OK] Safety hooks configured in ~/.gemini/config/hooks.json');
@@ -129,18 +130,14 @@ function install(agyPath) {
 
   console.log('\n==> Installing sdlc plugin into Antigravity...');
   const res = spawnSync(agyPath, ['plugin', 'install', sdlcDir], { stdio: 'inherit' });
-  if (res.error) {
-    console.error(` [ERROR] Failed to launch '${agyPath}': ${res.error.message}`);
-    process.exit(1);
-  }
   if (res.status !== 0) {
     console.error(` [ERROR] 'agy plugin install' exited with code ${res.status}`);
     process.exit(res.status || 1);
   }
   console.log(' [OK] Plugin installed successfully.');
 
-  console.log('\n==> Configuring safety hooks...');
-  configureHooks();
+  console.log('\n==> Configuring safety hooks from plugin manifest...');
+  configureHooks(sdlcDir);
 
   console.log('\nInstallation complete! All /sdlc:* skills are ready to use in Antigravity.');
   console.log('Try typing /sdlc:help in any Antigravity chat session.\n');

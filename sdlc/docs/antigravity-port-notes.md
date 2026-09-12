@@ -29,43 +29,23 @@ Two different shapes depending on how the MCP server is loaded:
 only** — what a user/policy writes to approve a tool, never the runtime tool-call name itself.
 Don't confuse the two when reading Antigravity's permission-related config or docs.
 
-## Plugin-bundled `hooks.json` does not auto-fire
+## Plugin-bundled `hooks.json` does not auto-fire at runtime (Validation vs. Runtime)
 
-Tested end-to-end, both surfaces:
+Tested end-to-end across all surfaces:
 
-- **`agy plugin validate <plugin-dir>`** recognizes and validates a plugin's own `hooks.json`
-  (`✔ hooks: 1 processed`) — so it's a real, checked component, not silently ignored by tooling.
-- **Neither the Antigravity IDE nor the `agy` CLI actually mounts it at runtime.** A minimal test
-  plugin (`PreToolUse` hook matching `run_command`, logging every invocation to a file) never
-  fired in either surface across multiple real tool calls — confirmed by the absence of its log
-  file, and independently confirmed via `audit.jsonl`, which recorded the `ALLOW` decision for a
-  test command as coming from the **global** hook evaluator (`~/.gemini/config/hooks.json`), with
-  no trace of the plugin hook ever being consulted. A workspace-level `.agents/hooks.json` was
-  also tried as a fallback and also did not fire — **only the global, per-machine config file is
-  ever consulted**, regardless of where else a `hooks.json` is declared.
+- **Validation layer (`agy plugin validate <plugin-dir>`)**: Antigravity's CLI checks the plugin root for a `hooks.json` file. When present and conforming to schema, it outputs `✔ hooks: 1 processed`. When missing, it outputs `- hooks: skipped (not found)`. This is why `sdlc/hooks.json` exists at the plugin root as the canonical Antigravity hook definition.
+- **Runtime layer (IDE & `agy` CLI)**: **Neither the Antigravity IDE nor the `agy` CLI mounts plugin-bundled `hooks.json` at runtime.** Confirmed empirically across multiple real tool calls and verified in `audit.jsonl`: only the machine-level config (`~/.gemini/config/hooks.json`) is consulted by the hook dispatcher. A hook declared only inside `~/.gemini/config/plugins/sdlc/hooks.json` never fires.
 
-### What this means for `gate-git.js` / `guard-agent-tools.js`
+### How this is reconciled: Canonical Manifest + Automated Global Registration
 
-Claude Code plugin hooks are wired automatically on install — this is the whole premise both of
-those hooks are built on (ship the enforcement logic in the plugin, every install gets it for
-free, no separate setup step). **That premise does not hold for Antigravity as of 2026-09-08.**
-An Antigravity port of either hook cannot be "just ship `hooks.json` in the plugin bundle" —
-it would only ever take effect if the user manually copies/merges that config into their own
-`~/.gemini/config/hooks.json`, a real, undocumented-by-us-so-far setup step, not something a
-plugin install can do on its own.
+Because plugin hooks do not auto-mount at runtime, they must be registered into `~/.gemini/config/hooks.json`. To prevent drift and eliminate duplication:
 
-**Decided (2026-09-08): option 1 — ship the hook logic, as a documented manual-install step.**
-`hooks-antigravity/gate-git.js` and `guard-agent-tools.js` carry the same policy as their Claude
-Code originals; `skills/install-hooks/SKILL.md` merges them into the user's global config,
-with explicit confirmation before writing (it edits a file outside the plugin's own directory)
-and a loud, standing warning that this **cannot guarantee the same safety Claude Code gets
-automatically** — real enforcement, but weaker and with real disclosed gaps (see both hook
-files' own headers): agent identity depends on the dispatching prompt setting `Role` correctly
-rather than a platform-set field, and several payload field names were never directly confirmed.
-Re-running the merge is needed whenever the plugin's hook logic changes; a future Antigravity
-release that starts auto-wiring plugin hooks would make this manual step (and its gaps)
-unnecessary — worth periodically re-testing with the original minimal harness before assuming
-that's happened.
+1. **Single Canonical Manifest (`sdlc/hooks.json`)**:
+   `sdlc/hooks.json` at the plugin root defines the hooks (`gate-git.js` on `run_command`, `guard-agent-tools.js` on `.*`) with clean relative paths. This satisfies `agy plugin validate` and acts as the single source of truth for Antigravity hooks. (The Claude Code manifest remains isolated at `sdlc/hooks/hooks.json`).
+2. **Automated Dynamic Parameterization**:
+   All three automated installers (`bin/cli.js`, `install.ps1`, `install.sh`) as well as the interactive `/sdlc:install-hooks` command do **not** hardcode hook JSON. Instead, they parse `sdlc/hooks.json`, dynamically rewrite the relative script paths into absolute paths targeting `~/.gemini/config/plugins/sdlc/hooks-antigravity/*.js`, and merge the resulting `"sdlc"` block into the user's `~/.gemini/config/hooks.json`.
+3. **Drift-Free Updates**:
+   Any additions or adjustments to matchers, timeouts, or hook events in `sdlc/hooks.json` automatically propagate to `~/.gemini/config/hooks.json` whenever an installer or `update` command runs.
 
 ## `agents/*.md` does not power `invoke_subagent` dispatch
 

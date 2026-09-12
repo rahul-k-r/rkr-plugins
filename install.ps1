@@ -106,38 +106,48 @@ if (-not $SkipHooks) {
         }
     }
 
-    $gateGit = (Join-Path $configDir "plugins\sdlc\hooks-antigravity\gate-git.js").Replace('\', '/')
-    $guardTools = (Join-Path $configDir "plugins\sdlc\hooks-antigravity\guard-agent-tools.js").Replace('\', '/')
+    $installedPluginDir = (Join-Path $configDir "plugins\sdlc").Replace('\', '/')
+    $sourceHooksPath = Join-Path $configDir "plugins\sdlc\hooks.json"
 
-    $hooksObj["sdlc"] = @{
-        "enabled" = $true
-        "PreToolUse" = @(
-            @{
-                "matcher" = "run_command"
-                "hooks" = @(
-                    @{
-                        "type" = "command"
-                        "command" = "node `"$gateGit`""
-                        "timeout" = 15
+    if (Test-Path $sourceHooksPath) {
+        $sourceJson = Get-Content $sourceHooksPath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
+        $sdlcBlock = if ($sourceJson.ContainsKey("sdlc")) { $sourceJson["sdlc"] } else { $sourceJson }
+
+        function Resolve-HookCommands ($item, $pluginDir) {
+            if ($item -is [System.Collections.IDictionary]) {
+                $copy = @{}
+                foreach ($key in $item.Keys) {
+                    if ($key -eq "command" -and $item[$key] -is [string]) {
+                        $cmd = $item[$key]
+                        if ($cmd -match '^node\s+(.+)$') {
+                            $scriptRel = $matches[1].Trim('"')
+                            $copy[$key] = "node `"$pluginDir/$scriptRel`""
+                        } else {
+                            $copy[$key] = $cmd
+                        }
+                    } else {
+                        $copy[$key] = Resolve-HookCommands $item[$key] $pluginDir
                     }
-                )
-            },
-            @{
-                "matcher" = ".*"
-                "hooks" = @(
-                    @{
-                        "type" = "command"
-                        "command" = "node `"$guardTools`""
-                        "timeout" = 15
-                    }
-                )
+                }
+                return $copy
+            } elseif ($item -is [System.Collections.IList]) {
+                $list = @()
+                foreach ($elem in $item) {
+                    $list += ,(Resolve-HookCommands $elem $pluginDir)
+                }
+                return $list
+            } else {
+                return $item
             }
-        )
-    }
+        }
 
-    $jsonOut = $hooksObj | ConvertTo-Json -Depth 10
-    Set-Content -Path $hooksFile -Value $jsonOut -Encoding UTF8
-    Write-Success "Hooks active: Git branch protection and tool guardrails configured."
+        $hooksObj["sdlc"] = Resolve-HookCommands $sdlcBlock $installedPluginDir
+        $jsonOut = $hooksObj | ConvertTo-Json -Depth 10
+        Set-Content -Path $hooksFile -Value $jsonOut -Encoding UTF8
+        Write-Success "Hooks active: Git branch protection and tool guardrails configured."
+    } else {
+        Write-Err "Could not find $sourceHooksPath to configure hooks."
+    }
 }
 
 Write-Host "`nInstallation finished successfully!" -ForegroundColor Green
