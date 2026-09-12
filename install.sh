@@ -3,6 +3,27 @@ set -e
 
 # Installer for sdlc Antigravity Plugin and safety hooks
 
+if [ "${1:-}" = "--codex" ]; then
+    echo -e "\n==> Checking for Codex CLI..."
+    if ! command -v codex &> /dev/null; then
+        echo " [ERROR] Codex CLI was not found on your PATH."
+        echo "Please install Codex first before installing this plugin."
+        exit 1
+    fi
+    CODEX_PATH=$(command -v codex)
+    echo " [OK] Found Codex CLI at: $CODEX_PATH"
+
+    echo -e "\n==> Updating the rkr-claude-plugins marketplace in Codex..."
+    if ! "$CODEX_PATH" plugin marketplace upgrade "rkr-claude-plugins"; then
+        "$CODEX_PATH" plugin marketplace add "rahul-k-r/rkr-claude-plugins" --ref main
+    fi
+
+    echo -e "\n==> Installing sdlc@rkr-claude-plugins into Codex..."
+    "$CODEX_PATH" plugin add "sdlc@rkr-claude-plugins"
+    echo " [OK] Codex sdlc plugin installed. Start a new Codex task before testing /sdlc:story-run."
+    exit 0
+fi
+
 echo -e "\n==> Checking for Antigravity (agy) CLI..."
 
 if ! command -v agy &> /dev/null; then

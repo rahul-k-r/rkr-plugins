@@ -1,6 +1,6 @@
 # SDLC Plugin (`sdlc`)
 
-> **Autonomous, verified, and tracker-agnostic software development lifecycle plugin for Claude Code and Google Antigravity.**
+> **Autonomous, verified, and tracker-agnostic software development lifecycle plugin for Claude Code, Codex, and Google Antigravity.**
 
 The `sdlc` plugin implements a disciplined, verify-before-done software development process for AI pair programmers. It automates design review, story planning, batch-by-batch test-driven coding, multi-perspective adversarial reviews, and PR creation — escalating to the human only where judgment genuinely requires it.
 
@@ -19,9 +19,9 @@ The `sdlc` plugin implements a disciplined, verify-before-done software developm
    - **Sprint Model**: Story branches target `sprint/<sprint-id>`, consolidated via `/sdlc:sprint-pr` at sprint close.
 4. **Worktree Isolation**:
    - Stories can execute inside their own `git worktree`, allowing multiple stories to run in parallel without dirtying your main working tree.
-5. **Dual-Harness Architecture**:
-   - One unified codebase works identically in **Claude Code** and **Google Antigravity**.
-   - Model effort is mapped automatically (`opus/sonnet/haiku` in Claude &harr; `pro/flash/flash_lite` in Antigravity).
+5. **Multi-Harness Architecture**:
+   - One unified codebase works across **Claude Code**, **Codex**, and **Google Antigravity**.
+   - Model effort is mapped automatically (`opus/sonnet/haiku` in Claude; explicit model plus reasoning effort in Codex; `pro/flash/flash_lite` in Antigravity).
 
 ---
 
@@ -34,6 +34,26 @@ The `sdlc` plugin implements a disciplined, verify-before-done software developm
 claude plugin marketplace add rahul-k-r/rkr-claude-plugins
 claude plugin install sdlc@rkr-claude-plugins
 ```
+
+### Codex
+
+```bash
+npx github:rahul-k-r/rkr-claude-plugins codex-install
+```
+
+Refresh after updating the repository with:
+
+```bash
+npx github:rahul-k-r/rkr-claude-plugins codex-update
+```
+
+Codex exposes the command adapters as `/sdlc:<command>`. Start a new Codex task after
+installation. Claude Code continues to use `commands/*.md` and its `Task` dispatch path;
+Antigravity continues to use its native skill adapters and `invoke_subagent`.
+
+Codex effort levels use semantic model slots resolved from the models currently advertised
+by its subagent tool. Effort selects calibrated per-agent model-slot and native-reasoning
+pairs; adjacent tiers change one axis at a time, and every dispatch passes both explicitly.
 
 ### Antigravity (AGY)
 
@@ -151,6 +171,6 @@ The plugin ships with two active guardrails:
 |---|---|---|
 | **Antigravity (AGY)** | `/sdlc:<command>` | Dispatched through native skills in `skills/<name>/SKILL.md` using `invoke_subagent`. |
 | **Claude Code** | `/sdlc:<command>` | Dispatched through command definitions in `commands/<name>.md` using `Task`. |
+| **Codex** | `/sdlc:<command>` | Dispatched through the command adapters using Codex's native `multi_agent_v1__spawn_agent` and `multi_agent_v1__wait_agent` tools. |
 
-Both platforms use the same flags, same agent personas, same state files (`docs/stories/<KEY>/story-state.json`), and same review gates.
-
+All three platforms use the same flags, agent personas, state files (`docs/stories/<KEY>/story-state.json`), and review gates.

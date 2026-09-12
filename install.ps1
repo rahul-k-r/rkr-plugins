@@ -1,7 +1,8 @@
 # Antigravity SDLC Plugin Installer
 [CmdletBinding()]
 param(
-    [switch]$SkipHooks
+    [switch]$SkipHooks,
+    [switch]$Codex
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,6 +10,42 @@ $ErrorActionPreference = "Stop"
 function Write-Step ($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
 function Write-Success ($msg) { Write-Host " [OK] $msg" -ForegroundColor Green }
 function Write-Err ($msg) { Write-Host " [ERROR] $msg" -ForegroundColor Red }
+
+if ($Codex) {
+    Write-Step "Checking for Codex CLI..."
+    $codexCmd = Get-Command "codex" -ErrorAction SilentlyContinue
+    if (-not $codexCmd) {
+        $codexBin = Join-Path $env:LOCALAPPDATA "OpenAI\Codex\bin"
+        $codexPath = Get-ChildItem $codexBin -Filter "codex.exe" -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+        if (-not $codexPath) {
+            Write-Err "Codex CLI was not found on PATH or under $codexBin."
+            Write-Host "Please install Codex before running this installer."
+            exit 1
+        }
+    } else {
+        $codexPath = $codexCmd.Source
+    }
+    Write-Success "Found Codex CLI: $codexPath"
+
+    Write-Step "Updating the rkr-claude-plugins marketplace in Codex..."
+    & $codexPath plugin marketplace upgrade "rkr-claude-plugins"
+    if ($LASTEXITCODE -ne 0) {
+        & $codexPath plugin marketplace add "rahul-k-r/rkr-claude-plugins" --ref main
+        if ($LASTEXITCODE -ne 0) {
+            Write-Err "Could not add the rkr-claude-plugins marketplace."
+            exit $LASTEXITCODE
+        }
+    }
+
+    Write-Step "Installing sdlc@rkr-claude-plugins into Codex..."
+    & $codexPath plugin add "sdlc@rkr-claude-plugins"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Err "Codex plugin installation failed."
+        exit $LASTEXITCODE
+    }
+    Write-Success "Codex sdlc plugin installed. Start a new Codex task before testing /sdlc:story-run."
+    exit 0
+}
 
 # 1. Locate Antigravity CLI
 Write-Step "Checking for Antigravity (agy) CLI..."

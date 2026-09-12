@@ -32,6 +32,56 @@ function findAgy() {
   return null;
 }
 
+function findCodex() {
+  const isWindows = process.platform === 'win32';
+  try {
+    const cmd = isWindows ? 'where codex' : 'which codex';
+    const output = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (output) return output.split(/\r?\n/)[0].trim();
+  } catch {}
+
+  if (isWindows) {
+    const binDir = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'OpenAI', 'Codex', 'bin');
+    if (fs.existsSync(binDir)) {
+      for (const entry of fs.readdirSync(binDir)) {
+        const fallback = path.join(binDir, entry, 'codex.exe');
+        if (fs.existsSync(fallback)) return fallback;
+      }
+      const fallback = path.join(binDir, 'codex.exe');
+      if (fs.existsSync(fallback)) return fallback;
+    }
+  } else {
+    const homeFallbacks = [
+      path.join(os.homedir(), '.local', 'bin', 'codex'),
+      '/usr/local/bin/codex'
+    ];
+    for (const f of homeFallbacks) {
+      if (fs.existsSync(f)) return f;
+    }
+  }
+
+  return null;
+}
+
+function quoteWindowsCommandArg(value) {
+  const text = String(value);
+  if (text && !/[\s"&^|<>]/.test(text)) return text;
+  return `"${text.replace(/"/g, '\\"')}"`;
+}
+
+function spawnCli(executable, args, options = {}) {
+  const windowsShim = process.platform === 'win32' && /\.(cmd|bat)$/i.test(executable);
+  if (!windowsShim) return spawnSync(executable, args, options);
+
+  // Invoke the Windows shell explicitly. Verbatim arguments preserve the nested
+  // quotes around a shim path or argument containing spaces.
+  const command = [executable, ...args].map(quoteWindowsCommandArg).join(' ');
+  return spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', command], {
+    ...options,
+    windowsVerbatimArguments: true
+  });
+}
+
 function getSdlcSource() {
   const localSdlc = path.resolve(__dirname, '..', 'sdlc');
   if (fs.existsSync(path.join(localSdlc, 'plugin.json'))) {
@@ -129,7 +179,7 @@ function install(agyPath) {
   }
 
   console.log('\n==> Installing sdlc plugin into Antigravity...');
-  const res = spawnSync(agyPath, ['plugin', 'install', sdlcDir], { stdio: 'inherit' });
+  const res = spawnCli(agyPath, ['plugin', 'install', sdlcDir], { stdio: 'inherit' });
   if (res.status !== 0) {
     console.error(` [ERROR] 'agy plugin install' exited with code ${res.status}`);
     process.exit(res.status || 1);
@@ -150,7 +200,7 @@ function update(agyPath) {
 
 function uninstall(agyPath) {
   console.log('\n==> Uninstalling sdlc plugin from Antigravity...');
-  const res = spawnSync(agyPath, ['plugin', 'uninstall', 'sdlc'], { stdio: 'inherit' });
+  const res = spawnCli(agyPath, ['plugin', 'uninstall', 'sdlc'], { stdio: 'inherit' });
   if (res.error) {
     console.warn(` [WARN] Failed to launch '${agyPath}': ${res.error.message}`);
   } else if (res.status !== 0) {
@@ -165,9 +215,54 @@ function uninstall(agyPath) {
   console.log('\nUninstallation complete. sdlc has been cleanly removed.\n');
 }
 
+const CODEX_MARKETPLACE = 'rkr-claude-plugins';
+const CODEX_PLUGIN = `sdlc@${CODEX_MARKETPLACE}`;
+const CODEX_REPOSITORY = 'rahul-k-r/rkr-claude-plugins';
+
+function ensureCodexMarketplace(codexPath) {
+  const upgrade = spawnCli(codexPath, ['plugin', 'marketplace', 'upgrade', CODEX_MARKETPLACE], { stdio: 'inherit' });
+  if (upgrade.status === 0) return;
+
+  console.log('\n==> Adding the rkr-claude-plugins marketplace to Codex...');
+  const add = spawnCli(codexPath, ['plugin', 'marketplace', 'add', CODEX_REPOSITORY, '--ref', 'main'], { stdio: 'inherit' });
+  if (add.status !== 0) {
+    console.error(` [ERROR] Could not add marketplace '${CODEX_MARKETPLACE}'.`);
+    process.exit(add.status || 1);
+  }
+}
+
+function installCodex(codexPath) {
+  console.log('\n==> Updating the rkr-claude-plugins marketplace in Codex...');
+  ensureCodexMarketplace(codexPath);
+
+  console.log(`\n==> Installing ${CODEX_PLUGIN} into Codex...`);
+  const res = spawnCli(codexPath, ['plugin', 'add', CODEX_PLUGIN], { stdio: 'inherit' });
+  if (res.status !== 0) {
+    console.error(` [ERROR] 'codex plugin add' exited with code ${res.status}`);
+    process.exit(res.status || 1);
+  }
+  console.log(' [OK] Codex plugin installed successfully.');
+  console.log('\nStart a new Codex task, then type /sdlc:help or /sdlc:story-run.\n');
+}
+
+function uninstallCodex(codexPath) {
+  console.log(`\n==> Uninstalling ${CODEX_PLUGIN} from Codex...`);
+  const res = spawnCli(codexPath, ['plugin', 'remove', CODEX_PLUGIN], { stdio: 'inherit' });
+  if (res.error) {
+    console.error(` [ERROR] Failed to launch '${codexPath}': ${res.error.message}`);
+    process.exit(1);
+  }
+  if (res.status !== 0) {
+    console.warn(` [WARN] 'codex plugin remove' exited with code ${res.status}.`);
+    process.exit(res.status || 1);
+  } else {
+    console.log(' [OK] Codex sdlc plugin uninstalled.');
+  }
+}
+
 function showHelp() {
   console.log(`
-SDLC Plugin Manager for Antigravity
+SDLC Plugin Manager for Codex and Antigravity
 
 Usage:
   npx github:rahul-k-r/rkr-claude-plugins <command>
@@ -176,6 +271,9 @@ Commands:
   install     Install the sdlc plugin and configure safety hooks (default)
   update      Update the sdlc plugin to latest and refresh hooks
   uninstall   Remove the sdlc plugin and clean up safety hooks
+  codex-install   Install sdlc@rkr-claude-plugins into Codex
+  codex-update    Refresh the marketplace and reinstall sdlc in Codex
+  codex-uninstall Remove sdlc@rkr-claude-plugins from Codex
   help        Show this help message
 `);
 }
@@ -189,23 +287,42 @@ function main() {
     return;
   }
 
-  const agyPath = findAgy();
-  if (!agyPath) {
-    console.error('\n [ERROR] Antigravity CLI (\'agy\') was not found on PATH or in standard install locations.');
-    console.error('Please install Google Antigravity before managing this plugin.\n');
-    process.exit(1);
-  }
-
   switch (command) {
     case 'install':
-      install(agyPath);
-      break;
     case 'update':
-      update(agyPath);
+    case 'uninstall': {
+      const agyPath = findAgy();
+      if (!agyPath) {
+        console.error('\n [ERROR] Antigravity CLI (\'agy\') was not found on PATH or in standard install locations.');
+        console.error('Please install Google Antigravity before managing this plugin.\n');
+        process.exit(1);
+      }
+      if (command === 'install') install(agyPath);
+      else if (command === 'update') update(agyPath);
+      else uninstall(agyPath);
       break;
-    case 'uninstall':
-      uninstall(agyPath);
+    }
+    case 'codex-install':
+    case 'codex-update': {
+      const codexPath = findCodex();
+      if (!codexPath) {
+        console.error('\n [ERROR] Codex CLI was not found on PATH or in standard install locations.');
+        console.error('Please install Codex before managing this plugin.\n');
+        process.exit(1);
+      }
+      installCodex(codexPath);
       break;
+    }
+    case 'codex-uninstall': {
+      const codexPath = findCodex();
+      if (!codexPath) {
+        console.error('\n [ERROR] Codex CLI was not found on PATH or in standard install locations.');
+        console.error('Please install Codex before managing this plugin.\n');
+        process.exit(1);
+      }
+      uninstallCodex(codexPath);
+      break;
+    }
     default:
       console.error(`Unknown command: ${command}`);
       showHelp();

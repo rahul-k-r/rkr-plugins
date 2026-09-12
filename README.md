@@ -1,8 +1,8 @@
 # Rahul's Agent Plugins (`rkr-claude-plugins`)
 
-A collection of personal plugins and workflows designed for **Claude Code** and **Google Antigravity (AGY)**.
+A collection of personal plugins and workflows designed for **Claude Code**, **Codex**, and **Google Antigravity (AGY)**.
 
-This repository serves as a plugin marketplace and workspace source. All plugins in this repository are engineered to run seamlessly on both Claude Code and Antigravity while maintaining a single, shared source of truth for business logic and command specifications.
+This repository serves as a plugin marketplace and workspace source. All plugins in this repository are engineered to run across Claude Code, Codex, and Antigravity while maintaining a single, shared source of truth for business logic and command specifications.
 
 ---
 
@@ -10,7 +10,7 @@ This repository serves as a plugin marketplace and workspace source. All plugins
 
 | Plugin | Version | Description | Platforms |
 |---|---|---|---|
-| **[`sdlc`](./sdlc/)** | `0.6.0` | Comprehensive story SDLC: design-review gate, full autonomous story lifecycle (`story-run`), multi-expert design deliberation (`design-run`), multi-PR review subsystem (`review-run`), and product design review (`product-design-review`). | Claude Code, Antigravity |
+| **[`sdlc`](./sdlc/)** | `0.6.0` | Comprehensive story SDLC: design-review gate, full autonomous story lifecycle (`story-run`), multi-expert design deliberation (`design-run`), multi-PR review subsystem (`review-run`), and product design review (`product-design-review`). | Claude Code, Codex, Antigravity |
 
 ---
 
@@ -37,7 +37,26 @@ Hooks are automatically loaded by Claude Code via `sdlc/hooks/hooks.json`.
 
 ---
 
-### 2. Google Antigravity (AGY)
+### 2. Codex
+
+Install the personal SDLC plugin from the repository marketplace:
+
+```bash
+npx github:rahul-k-r/rkr-claude-plugins codex-install
+```
+
+To refresh it after an update:
+
+```bash
+npx github:rahul-k-r/rkr-claude-plugins codex-update
+```
+
+PowerShell and Bash users can run `install.ps1 -Codex` or `install.sh --codex`.
+Start a new Codex task after installation so its command index is rebuilt.
+
+---
+
+### 3. Google Antigravity (AGY)
 
 #### Cross-Platform (Recommended — Windows, macOS, Linux)
 Install directly via `npx` (requires Node.js):
@@ -99,7 +118,7 @@ If you have cloned this repository and are developing plugins locally, Antigravi
 
 ---
 
-## Dual-Platform Architecture
+## Three-Harness Architecture
 
 ```
 rkr-claude-plugins/
@@ -109,6 +128,7 @@ rkr-claude-plugins/
 │   └── plugins.json
 └── sdlc/                        # The SDLC Plugin
     ├── plugin.json              # Antigravity & Agent Plugin spec
+    ├── .codex-plugin/           # Codex plugin manifest
     ├── .claude-plugin/          # Claude Code plugin spec
     ├── commands/                # Single Source of Truth for all workflow logic
     │   ├── story-run.md
@@ -118,7 +138,7 @@ rkr-claude-plugins/
     │   ├── designer.md
     │   ├── architect.md
     │   └── ...
-    ├── skills/                  # Antigravity skill adapters (namespaced as sdlc:<name>)
+    ├── skills/                  # Command adapters (namespaced as sdlc:<name>)
     │   ├── story-run/SKILL.md
     │   ├── design-run/SKILL.md
     │   └── ...
@@ -127,8 +147,8 @@ rkr-claude-plugins/
 ```
 
 - **Single Source of Truth**: All workflow phases, checks, and prompt logic live in `sdlc/commands/*.md` and `sdlc/agents/*.md`.
-- **Zero Drift**: Updating a command's workflow automatically updates it for both Claude Code and Antigravity.
-- **Harness Adapters**: `sdlc/skills/<name>/SKILL.md` files provide thin, native adapters that translate harness primitives (e.g. `invoke_subagent` for Antigravity, `Task` for Claude Code) while keeping command names (`/sdlc:story-run`) identical on both platforms.
+- **Zero Drift**: Updating a command's workflow automatically updates it for Claude Code, Codex, and Antigravity.
+- **Harness Adapters**: `sdlc/skills/<name>/SKILL.md` files provide thin, native adapters that translate harness primitives (`multi_agent_v1__spawn_agent` for Codex, `invoke_subagent` for Antigravity, and `Task` for Claude Code) while keeping command names (`/sdlc:story-run`) identical across platforms.
 
 ---
 
@@ -136,4 +156,3 @@ rkr-claude-plugins/
 
 - **Author**: Rahul (<rahulkundapurr@gmail.com>)
 - **Repository**: [github.com/rahul-k-r/rkr-claude-plugins](https://github.com/rahul-k-r/rkr-claude-plugins)
-
