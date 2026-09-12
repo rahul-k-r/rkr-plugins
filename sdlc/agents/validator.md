@@ -14,11 +14,12 @@ Rules:
 - If a listed linter is not installed locally and the repo treats in-PR CI as authoritative for lint, don't fail the step: mark it `"DEFERRED_TO_CI"`.
 - Capture the exact failing output, trimmed to the relevant error/traceback — no paraphrasing of error text.
 - **Windows/CRLF:** a formatter flagging whole files under `core.autocrlf` is a working-tree artifact, not a real failure — don't let it affect `overall`.
+- **Environment failures are `FAIL_ENV`, not `FAIL`.** A step whose failure is environment-shaped — a module/package/import that can't be found, a missing interpreter or venv, a tool absent from `PATH` inside the working root, a bundler or build tool unable to locate its workspace/project root — means the worktree was never bootstrapped (or its bootstrap missed a directory), not that the code is wrong (`skills/worktree-mode/SKILL.md`, *Recognizing the symptom*). Classify it so the orchestrator escalates instead of sending the coder to "fix" it. When in doubt between the two, prefer `FAIL`: a genuine test failure mis-tagged `FAIL_ENV` costs one escalation; the reverse costs every retry in the budget.
 
 Output:
 
 ```json
-{"overall": "PASS|FAIL", "steps": [{"name": "<command>", "status": "PASS|FAIL|DEFERRED_TO_CI", "output_excerpt": null, "flake_rerun": null}]}
+{"overall": "PASS|FAIL", "steps": [{"name": "<command>", "status": "PASS|FAIL|FAIL_ENV|DEFERRED_TO_CI", "output_excerpt": null, "flake_rerun": null}]}
 ```
 
-`output_excerpt` carries the exact trimmed failure text on FAIL. `flake_rerun` records both outcomes when a suspected flake was rerun (e.g. "FAIL then PASS"). `overall` is FAIL if any step other than a `DEFERRED_TO_CI` lint is FAIL.
+`output_excerpt` carries the exact trimmed failure text on FAIL or FAIL_ENV. `flake_rerun` records both outcomes when a suspected flake was rerun (e.g. "FAIL then PASS"). `overall` is FAIL if any step other than a `DEFERRED_TO_CI` lint is FAIL or FAIL_ENV.
