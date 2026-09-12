@@ -25,6 +25,36 @@ The `sdlc` plugin implements a disciplined, verify-before-done software developm
 
 ---
 
+## Installation & Updates
+
+### Claude Code
+
+```bash
+# Add marketplace & install
+claude plugin marketplace add rahul-k-r/rkr-claude-plugins
+claude plugin install sdlc@rkr-claude-plugins
+```
+
+### Antigravity (AGY)
+
+#### Cross-Platform (`npx` — Recommended)
+```bash
+# Install plugin & configure safety hooks
+npx github:rahul-k-r/rkr-claude-plugins install
+
+# Update to latest version
+npx github:rahul-k-r/rkr-claude-plugins update
+
+# Uninstall plugin & remove hooks
+npx github:rahul-k-r/rkr-claude-plugins uninstall
+```
+
+#### OS Shell Scripts
+- **Windows (PowerShell)**: `irm https://raw.githubusercontent.com/rahul-k-r/rkr-claude-plugins/main/install.ps1 | iex`
+- **macOS / Linux (Bash)**: `curl -fsSL https://raw.githubusercontent.com/rahul-k-r/rkr-claude-plugins/main/install.sh | bash`
+
+---
+
 ## Command Catalog
 
 All commands are callable as `/sdlc:<command>`:

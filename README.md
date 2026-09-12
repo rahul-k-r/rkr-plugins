@@ -16,7 +16,28 @@ This repository serves as a plugin marketplace and workspace source. All plugins
 
 ## Installation Guide
 
-### 1. Google Antigravity (AGY)
+### 1. Claude Code
+
+#### Option A: Marketplace Installation
+Add this repository as a plugin marketplace in Claude Code:
+
+```bash
+claude plugin marketplace add rahul-k-r/rkr-claude-plugins
+claude plugin install sdlc@rkr-claude-plugins
+```
+
+#### Option B: Local / Development Installation
+Load the plugin from a local directory:
+
+```bash
+claude plugin install ./sdlc
+```
+
+Hooks are automatically loaded by Claude Code via `sdlc/hooks/hooks.json`.
+
+---
+
+### 2. Google Antigravity (AGY)
 
 #### Cross-Platform (Recommended — Windows, macOS, Linux)
 Install directly via `npx` (requires Node.js):
@@ -75,27 +96,6 @@ If you have cloned this repository and are developing plugins locally, Antigravi
   ]
 }
 ```
-
----
-
-### 2. Claude Code
-
-#### Option A: Marketplace Installation
-Add this repository as a plugin marketplace in Claude Code:
-
-```bash
-claude plugin marketplace add rahul-k-r/rkr-claude-plugins
-claude plugin install sdlc@rkr-claude-plugins
-```
-
-#### Option B: Local / Development Installation
-Load the plugin from a local directory:
-
-```bash
-claude plugin install ./sdlc
-```
-
-Hooks are automatically loaded by Claude Code via `sdlc/hooks/hooks.json`.
 
 ---
 
