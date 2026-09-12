@@ -5,6 +5,10 @@ description: Install sdlc's Antigravity hooks (branch protection, per-agent trac
 
 # /sdlc:install-hooks
 
+**Host guard:** This command is for Google Antigravity only. If the current host is Codex or
+Claude Code, stop and report that its hooks are managed by the host's plugin installation; do
+not modify the user's Antigravity configuration.
+
 ⚠️ **Read this in full before running it, and print the same warning to the developer before
 writing anything.** Antigravity does not auto-wire a plugin's own `hooks.json` (confirmed
 empirically — see `docs/antigravity-port-notes.md`), so `hooks-antigravity/gate-git.js` and
