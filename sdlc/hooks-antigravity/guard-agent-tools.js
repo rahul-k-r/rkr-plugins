@@ -143,7 +143,7 @@ process.stdin.on('end', () => {
   return deny(
     `"${role}" is scoped to {${scope.builtins.join(', ')}} plus tracker ops ` +
       `{${scope.ops.join(', ')}} (on any MCP server) — "${toolName}"${op ? ` (op: ${op})` : ''} ` +
-      `isn't in that list. See skills/tracker-adapter/SKILL.md and ` +
+      `isn't in that list. See internal/tracker-adapter/SKILL.md and ` +
       `docs/antigravity-port-notes.md for how this scoping works and its known limits.`
   );
 });

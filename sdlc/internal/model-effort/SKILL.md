@@ -41,7 +41,7 @@ Organized by each agent's High-tier (frontmatter) default — the stable referen
 | `validator` | haiku | haiku | haiku | haiku | haiku |
 | `publisher` | haiku | haiku | haiku | haiku | haiku |
 
-Batch/final-review verdicts and provenance posting are the orchestrating session's own work (see `story-run.md` 5d and `skills/tracker-adapter/SKILL.md` → Provenance records) — no dispatch, so no row here.
+Batch/final-review verdicts and provenance posting are the orchestrating session's own work (see `story-run.md` 5d and `internal/tracker-adapter/SKILL.md` → Provenance records) — no dispatch, so no row here.
 
 **The rule in words**, for anyone extending this table later (a new agent, a new tier):
 

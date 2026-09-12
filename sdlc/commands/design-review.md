@@ -7,16 +7,16 @@ argument-hint: "<STORY-KEY> [--plain] (e.g. AGL-19)"
 
 ## Output style (`--plain`)
 
-`--plain` (anywhere in `$ARGUMENTS`) narrates the findings report — gaps, challenges, suggestions, and what each means for the story — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; cited sections, invariants, and file references stay verbatim either way.
+`--plain` (anywhere in `$ARGUMENTS`) narrates the findings report — gaps, challenges, suggestions, and what each means for the story — per `internal/plain-language/STANDARD.md` instead of the default engineer-level voice; cited sections, invariants, and file references stay verbatim either way.
 
-**Worktree & local docs.** Check `docs/stories/$STORY_KEY/story-state.json` (if present — absent means this story never went through `/sdlc:story-start`/`/sdlc:story-run`, so there's nothing but the session's own root to check) for `worktree` and `local_docs`, per `skills/worktree-mode/SKILL.md` and `skills/local-docs/SKILL.md`. Step 1 opens the note at its resolved location: the session's own root under `local_docs: true`, `worktree` (when set) otherwise — a review invoked from inside the story's own worktree mid-implementation still needs this to find the right copy.
+**Worktree & local docs.** Check `docs/stories/$STORY_KEY/story-state.json` (if present — absent means this story never went through `/sdlc:story-start`/`/sdlc:story-run`, so there's nothing but the session's own root to check) for `worktree` and `local_docs`, per `internal/worktree-mode/SKILL.md` and `internal/local-docs/SKILL.md`. Step 1 opens the note at its resolved location: the session's own root under `local_docs: true`, `worktree` (when set) otherwise — a review invoked from inside the story's own worktree mid-implementation still needs this to find the right copy.
 
 ## Steps
 
 1. **Read the existing design note.** Open `docs/design-notes/$STORY_KEY.md` at its resolved location (above). If it does not exist, refuse and suggest running `/sdlc:plan-the-design $STORY_KEY` instead.
 
 2. **Read supporting context.** In parallel:
-   - The ticket, via the tracker-adapter's `get_issue` op (`skills/tracker-adapter/SKILL.md`) — whichever tracker (`jira`|`linear`) resolved this session — for AC, linked issues, status. If `tracker: none` resolved, there's nothing to fetch: proceed on the design note and the docs read below alone, same as the note's own "if available" framing already implies.
+   - The ticket, via the tracker-adapter's `get_issue` op (`internal/tracker-adapter/SKILL.md`) — whichever tracker (`jira`|`linear`) resolved this session — for AC, linked issues, status. If `tracker: none` resolved, there's nothing to fetch: proceed on the design note and the docs read below alone, same as the note's own "if available" framing already implies.
    - `DECISIONS.md` and relevant ADRs in `docs/adr/`.
    - Design notes of any stories listed in the note's Depends-on / Related fields.
    - Code and schemas referenced by the note's §1 Scope.

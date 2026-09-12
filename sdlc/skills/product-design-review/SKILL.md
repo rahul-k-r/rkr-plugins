@@ -8,10 +8,10 @@ description: Schemas, severity rubric, archetype defaults, and shared rules for 
 > **Path Resolution**: Resolve all referenced plugin paths (`commands/...`, `agents/...`, `skills/...`) relative to the plugin directory (two levels above this `SKILL.md`).
 > **Subagent Dispatch**:
 > Wherever `commands/product-design-review.md` dispatches agents (`surveyor`, `cartographer`, `flow-tracer`, `panelist`, `moderator`, `verifier`, `publisher`):
-> - Call `invoke_subagent` with `TypeName: "self"` (or `"research"` for read-only agents).
-> - Set `Role` to the agent name.
-> - Set `Model` tier resolved from `skills/gemini-model-effort/SKILL.md` (e.g. `pro` for cartographer/panelist/verifier/moderator; `flash` for surveyor; `flash_lite` for publisher).
-> - Set `Prompt` to the verbatim persona from `agents/<name>.md` (in the plugin directory) followed by the specific task.
+> - **Codex:** resolve `model` and `reasoning_effort` through `internal/codex-model-effort.md`, then use `multi_agent_v1__spawn_agent`.
+> - **Antigravity:** resolve `Model` through `internal/gemini-model-effort/SKILL.md`, then use `invoke_subagent` with the agent name as `Role`.
+> - **Claude Code:** when this adapter is selected directly, follow the source command's `Task` dispatch.
+> - Pass the verbatim persona from `agents/<name>.md` plus task context.
 
 When invoked as a command (`/sdlc:product-design-review [options]`):
 Read `commands/product-design-review.md` (in the plugin directory) in full and execute the phases: INVENTORY -> PROFILE GATE -> FLOW SWEEP -> DELIBERATE -> VERIFY+SYNTHESIZE -> HUMAN SESSIONS -> PUBLISH.
@@ -182,7 +182,7 @@ no unresolved BLOCKER/GAP."
 
 The `create-ticket`/`update-ac`/`comment`/`link` ops map 1:1 onto the
 tracker-adapter's `create_issue`/`update_field`/`add_comment`/`create_link`
-ops (`skills/tracker-adapter/SKILL.md`) and are executed by `publisher`
+ops (`internal/tracker-adapter/SKILL.md`) and are executed by `publisher`
 against whichever tracker resolved for the repo (Jira or Linear — see that
 file for the exact tool mapping, including the `link`→comment fallback on
 Linear). `doc-change` entries (TDD amendments, DECISIONS entries, ADR

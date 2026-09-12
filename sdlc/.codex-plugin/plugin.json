@@ -1,0 +1,32 @@
+{
+  "name": "sdlc",
+  "version": "0.6.0",
+  "description": "Personal story SDLC workflows for design review, implementation, review, and release gates.",
+  "skills": "./skills/",
+  "author": {
+    "name": "Rahul",
+    "email": "rahulkundapurr@gmail.com"
+  },
+  "repository": "https://github.com/rahul-k-r/rkr-claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "sdlc",
+    "software-development",
+    "code-review",
+    "project-management"
+  ],
+  "interface": {
+    "displayName": "SDLC",
+    "shortDescription": "Verified story lifecycle workflows",
+    "longDescription": "Design, plan, implement, review, and close software stories with explicit gates and verification.",
+    "developerName": "Rahul",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Story lifecycle orchestration",
+      "Design review",
+      "Code review and verification",
+      "Release gates"
+    ],
+    "defaultPrompt": "Use the SDLC command that matches the requested software-development workflow."
+  }
+}

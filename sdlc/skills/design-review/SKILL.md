@@ -21,7 +21,7 @@ there proportional to the actual design risk.
 
 When invoked directly as a slash command:
 1. **Locate note**: Check `docs/stories/$STORY-KEY/story-state.json` (if present) for worktree and local_docs resolution. Read `docs/design-notes/$STORY-KEY.md`. If it does not exist, suggest `/sdlc:plan-the-design $STORY-KEY`.
-2. **Read supporting context**: Ticket via tracker-adapter (`skills/tracker-adapter/SKILL.md`), `DECISIONS.md`, ADRs in `docs/adr/`, and referenced code.
+2. **Read supporting context**: Ticket via tracker-adapter (`internal/tracker-adapter/SKILL.md`), `DECISIONS.md`, ADRs in `docs/adr/`, and referenced code.
 3. **Run protocol as critique**: Walk Q1–Q7 against the existing note.
 4. **Report findings**: Structured critique with Gaps, Challenges, Suggestions.
 5. **Do not modify the note**: The author updates the note.

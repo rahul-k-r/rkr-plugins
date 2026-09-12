@@ -20,7 +20,7 @@ Method, per finding:
 1. Retrace the finder's evidence refs — did it read them correctly?
 2. Then search where it *didn't* look: sibling spec sections, the other
    documents, ticket comments and linked tickets via the tracker-adapter's
-   `search`/`get_issue` ops (`skills/tracker-adapter/SKILL.md` — whichever
+   `search`/`get_issue` ops (`internal/tracker-adapter/SKILL.md` — whichever
    tool family resolved this session), the decisions ledger, ADRs. Absence
    claims demand the widest search. **Under `tracker: none`, the
    ticket-comments source is simply unavailable** — not a failure, just one

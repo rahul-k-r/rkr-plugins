@@ -10,13 +10,11 @@ Autonomous multi-expert design deliberation: frame candidate design issues, argu
 > **Path Resolution**: Resolve all referenced plugin paths (`commands/...`, `agents/...`, `skills/...`, `docs/...`) relative to the plugin directory (two levels above this `SKILL.md`).
 > **Subagent Dispatch**:
 > Wherever `commands/design-run.md` says to dispatch an agent (`designer`, `panelist`, `architect`):
-> - Call `invoke_subagent` with `TypeName: "self"` (or `"research"` for read-only agents).
-> - Set `Role` to the agent name (e.g. `Role: "designer"`).
-> - Set `Model` tier resolved from `skills/gemini-model-effort/SKILL.md` (e.g. `"pro"` at High effort).
-> - Set `Prompt` to the **verbatim persona from `agents/<name>.md`** (in the plugin directory) followed by the specific task/context.
-> - Ignore `EnterWorktree` mentions (manage worktrees via standard git commands).
-> **Telemetry & Stats**: Collect `dispatches[]` and write local state snapshots. If `--show-stats` is requested, render the HTML report to the Antigravity Artifacts directory.
+> - **Codex:** resolve `model` and `reasoning_effort` through `internal/codex-model-effort.md`, then use `multi_agent_v1__spawn_agent`.
+> - **Antigravity:** resolve `Model` through `internal/gemini-model-effort/SKILL.md`, then use `invoke_subagent` with the agent name as `Role`.
+> - **Claude Code:** when this adapter is selected directly, follow the source command's `Task` dispatch.
+> - Pass the verbatim persona from `agents/<name>.md` plus task context. Ignore `EnterWorktree`; manage worktrees with git.
+> **Telemetry & Stats**: Collect `dispatches[]` and write local state snapshots. If `--show-stats` is requested, render the HTML report to the host's available local artifact/report location.
 
 Read `commands/design-run.md` (in the plugin directory) in full and follow its steps.
 Pass through `$ARGUMENTS` (such as `[<KEY>] [--effort <tier>] [--plain]`).
-

@@ -22,11 +22,11 @@ argument-hint: "(no arguments)"
 
 5. **Resolve and persist `.sdlc/config.json`.** If it already exists, print its current values and skip straight to step 6 — this step never overwrites an existing config; use a plain edit (or delete the file) to change it later.
 
-   Otherwise, ask five questions (see `skills/tracker-adapter/SKILL.md`, `skills/model-effort/SKILL.md`, and `skills/local-docs/SKILL.md` for the full resolution logic behind the first, third, and fourth):
+   Otherwise, ask five questions (see `internal/tracker-adapter/SKILL.md`, `internal/model-effort/SKILL.md`, and `internal/local-docs/SKILL.md` for the full resolution logic behind the first, third, and fourth):
 
    - **Tracker**: try auto-detection first (which MCP tool family — Jira or Linear — is registered this session). Exactly one found → confirm it with the developer rather than asking cold. Both or neither found → ask outright, offering `jira` / `linear` / `none` (`none` is a real, fully-supported answer — not a fallback to apologize for). If `jira`, also ask for the project key; Linear's team prefix is read off issue keys directly and doesn't need to be asked separately.
    - **Branch model**: does this repo use sprint branches with a teammate-approved sprint→main merge, or does it merge story PRs straight to `main`, self-approved? Offer `sprint` / `direct`, defaulting the suggestion to `direct` if the repo has no `sprint/*` branches on `origin` (a real signal, not a guess) and to `sprint` if it does.
-   - **Effort** (optional, default `high`): does this repo want every subagent at its full default model tier (`high` — the plugin's shipped behavior, safe to just accept), or a different baseline — cheaper/faster (`low`, `very-low`), a mixed step-down that still protects the highest-risk roles (`medium`), or maximum quality regardless of cost (`extra-high`)? Point at `skills/model-effort/SKILL.md`'s table rather than re-explaining it here. Skip asking if the developer doesn't care — default to `high` silently.
+   - **Effort** (optional, default `high`): does this repo want every subagent at its full default model tier (`high` — the plugin's shipped behavior, safe to just accept), or a different baseline — cheaper/faster (`low`, `very-low`), a mixed step-down that still protects the highest-risk roles (`medium`), or maximum quality regardless of cost (`extra-high`)? Point at `internal/model-effort/SKILL.md`'s table rather than re-explaining it here. Skip asking if the developer doesn't care — default to `high` silently.
    - **Local docs** (optional, default `false`): should design notes and ADRs be committed to the branch as usual, or stay local-only — written to disk, never staged or committed? Offer `false` / `true`. Skip asking if the developer doesn't care — default to `false` (the plugin's original behavior) silently.
    - **Panel lenses** (optional, default `["reliability", "simplicity"]`): does this product carry auth, multi-tenant or classified data, or untrusted input? If so, add `"security"` so `design-run`'s lens panel also argues the security/data-boundary perspective on ADR-threshold issues (see `agents/panelist.md` for what each lens covers). Skip asking if the developer doesn't care — default silently.
 
@@ -49,9 +49,9 @@ argument-hint: "(no arguments)"
    - `"worktreeSetup": [{ "dir": "frontend", "command": "npm ci" }, ...]` — the commands that make a
      freshly created story worktree usable, when lockfile auto-detection isn't enough (a
      `requirements.txt` venv, a codegen step, an untracked `.env` to copy). Usually written the first
-     time a story run asks for it rather than by hand. See `skills/worktree-mode/SKILL.md`,
+     time a story run asks for it rather than by hand. See `internal/worktree-mode/SKILL.md`,
      *Bootstrapping a fresh worktree*.
 
-6. **If `localDocs: true` was just chosen (or already was), ensure `docs/design-notes/.gitignore` and `docs/adr/.gitignore` exist**, each containing a bare `*` — the same reinforcement `skills/local-docs/SKILL.md` describes, applied immediately rather than waiting for the first story to need it. Skip under `localDocs: false`.
+6. **If `localDocs: true` was just chosen (or already was), ensure `docs/design-notes/.gitignore` and `docs/adr/.gitignore` exist**, each containing a bare `*` — the same reinforcement `internal/local-docs/SKILL.md` describes, applied immediately rather than waiting for the first story to need it. Skip under `localDocs: false`.
 
 7. **Report.** Print a summary of actions taken (created / skipped / updated for each path, including the config). No commits — the user decides when to commit the scaffolding.

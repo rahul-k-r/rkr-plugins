@@ -91,7 +91,7 @@ frontmatter has no Antigravity dispatch-time equivalent to fall back to.
 subagent gets either full tool inheritance or a fixed read-only set — nothing in between, and no
 hook currently intercepts what it does with that access unless the global config is manually
 edited. The elaborate per-role, per-operation scoping `guard-agent-tools.js` gives Claude Code
-(built specifically to avoid hardcoding MCP server names — see `skills/tracker-adapter/SKILL.md`)
+(built specifically to avoid hardcoding MCP server names — see `internal/tracker-adapter/SKILL.md`)
 has no current Antigravity equivalent. This is a real, load-bearing gap to be upfront about, not
 something to paper over with a weaker-but-still-real substitute — there currently isn't one.
 
@@ -140,7 +140,7 @@ once and trusts the invoking session to apply it consistently wherever the under
 > tool (which doesn't exist here): call `invoke_subagent` with one `Subagents` entry —
 > `TypeName: "self"` (or `"research"` if the agent's job is strictly read-only — check
 > `agents/<agent>.md`'s own tool description), `Role`: the exact agent name (e.g. `Role: "designer"`),
-> `Model`: the tier-resolved key from `skills/gemini-model-effort/SKILL.md`'s table for that
+> `Model`: the tier-resolved key from `internal/gemini-model-effort/SKILL.md`'s table for that
 > agent and the run's resolved effort tier, `Prompt`: the **full verbatim content of
 > `agents/<agent>.md`** (resolved from the plugin root), followed by the specific per-dispatch task/context the original file
 > describes passing, `Workspace: "inherit"` unless the file says otherwise. Everything else about
@@ -154,5 +154,5 @@ Two things every one of these 5 files also does:
   as inapplicable, not as an instruction to find an equivalent. Antigravity's own per-subagent
   `Workspace` field (`"inherit"|"branch"|"share"`) is the closest analog, already covered above.
 - **The `--show-stats` Artifact report.** Antigravity natively supports Artifacts (`<artifactDirectoryPath>`)
-  and rich HTML widgets via `generative_ui`. Under `--show-stats`, render `skills/run-stats/template.html`
+  and rich HTML widgets via `generative_ui`. Under `--show-stats`, render `internal/run-stats/template.html`
   filled with data and output it to the artifact directory.

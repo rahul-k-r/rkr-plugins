@@ -10,11 +10,10 @@ Apply review findings to a PR you authored: triage fixable vs. needs-your-judgme
 > **Path Resolution**: Resolve all referenced plugin paths (`commands/...`, `agents/...`, `skills/...`) relative to the plugin directory (two levels above this `SKILL.md`).
 > **Subagent Dispatch**:
 > Wherever `commands/review-fix.md` dispatches agents (`coder`, `validator`, `reviewer`):
-> - Call `invoke_subagent` with `TypeName: "self"` (or `"research"` for read-only agents).
-> - Set `Role` to the agent name.
-> - Set `Model` tier resolved from `skills/gemini-model-effort/SKILL.md` (`pro` for coder; `flash` for reviewer; `flash_lite` for validator).
-> - Set `Prompt` to the verbatim persona from `agents/<name>.md` (in the plugin directory) followed by the specific task/context.
+> - **Codex:** resolve `model` and `reasoning_effort` through `internal/codex-model-effort.md`, then use `multi_agent_v1__spawn_agent`.
+> - **Antigravity:** resolve `Model` through `internal/gemini-model-effort/SKILL.md`, then use `invoke_subagent` with the agent name as `Role`.
+> - **Claude Code:** when this adapter is selected directly, follow the source command's `Task` dispatch.
+> - Pass the verbatim persona from `agents/<name>.md` plus task context.
 
 Read `commands/review-fix.md` (in the plugin directory) in full and follow its steps.
 Pass through `$ARGUMENTS` (such as `[<PR-URL>] [--effort <tier>] [--plain]`).
-
