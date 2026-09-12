@@ -215,15 +215,15 @@ function uninstall(agyPath) {
   console.log('\nUninstallation complete. sdlc has been cleanly removed.\n');
 }
 
-const CODEX_MARKETPLACE = 'rkr-claude-plugins';
+const CODEX_MARKETPLACE = 'rkr-plugins';
 const CODEX_PLUGIN = `sdlc@${CODEX_MARKETPLACE}`;
-const CODEX_REPOSITORY = 'rahul-k-r/rkr-claude-plugins';
+const CODEX_REPOSITORY = 'rahul-k-r/rkr-plugins';
 
 function ensureCodexMarketplace(codexPath) {
   const upgrade = spawnCli(codexPath, ['plugin', 'marketplace', 'upgrade', CODEX_MARKETPLACE], { stdio: 'inherit' });
   if (upgrade.status === 0) return;
 
-  console.log('\n==> Adding the rkr-claude-plugins marketplace to Codex...');
+  console.log('\n==> Adding the rkr-plugins marketplace to Codex...');
   const add = spawnCli(codexPath, ['plugin', 'marketplace', 'add', CODEX_REPOSITORY, '--ref', 'main'], { stdio: 'inherit' });
   if (add.status !== 0) {
     console.error(` [ERROR] Could not add marketplace '${CODEX_MARKETPLACE}'.`);
@@ -232,7 +232,7 @@ function ensureCodexMarketplace(codexPath) {
 }
 
 function installCodex(codexPath) {
-  console.log('\n==> Updating the rkr-claude-plugins marketplace in Codex...');
+  console.log('\n==> Updating the rkr-plugins marketplace in Codex...');
   ensureCodexMarketplace(codexPath);
 
   console.log(`\n==> Installing ${CODEX_PLUGIN} into Codex...`);
@@ -265,15 +265,15 @@ function showHelp() {
 SDLC Plugin Manager for Codex and Antigravity
 
 Usage:
-  npx github:rahul-k-r/rkr-claude-plugins <command>
+  npx github:rahul-k-r/rkr-plugins <command>
 
 Commands:
   install     Install the sdlc plugin and configure safety hooks (default)
   update      Update the sdlc plugin to latest and refresh hooks
   uninstall   Remove the sdlc plugin and clean up safety hooks
-  codex-install   Install sdlc@rkr-claude-plugins into Codex
+  codex-install   Install sdlc@rkr-plugins into Codex
   codex-update    Refresh the marketplace and reinstall sdlc in Codex
-  codex-uninstall Remove sdlc@rkr-claude-plugins from Codex
+  codex-uninstall Remove sdlc@rkr-plugins from Codex
   help        Show this help message
 `);
 }

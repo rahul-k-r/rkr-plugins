@@ -1,4 +1,4 @@
-# Rahul's Agent Plugins (`rkr-claude-plugins`)
+# Rahul's Agent Plugins (`rkr-plugins`)
 
 A collection of personal plugins and workflows designed for **Claude Code**, **Codex**, and **Google Antigravity (AGY)**.
 
@@ -22,8 +22,8 @@ This repository serves as a plugin marketplace and workspace source. All plugins
 Add this repository as a plugin marketplace in Claude Code:
 
 ```bash
-claude plugin marketplace add rahul-k-r/rkr-claude-plugins
-claude plugin install sdlc@rkr-claude-plugins
+claude plugin marketplace add rahul-k-r/rkr-plugins
+claude plugin install sdlc@rkr-plugins
 ```
 
 #### Option B: Local / Development Installation
@@ -42,13 +42,13 @@ Hooks are automatically loaded by Claude Code via `sdlc/hooks/hooks.json`.
 Install the personal SDLC plugin from the repository marketplace:
 
 ```bash
-npx github:rahul-k-r/rkr-claude-plugins codex-install
+npx github:rahul-k-r/rkr-plugins codex-install
 ```
 
 To refresh it after an update:
 
 ```bash
-npx github:rahul-k-r/rkr-claude-plugins codex-update
+npx github:rahul-k-r/rkr-plugins codex-update
 ```
 
 PowerShell and Bash users can run `install.ps1 -Codex` or `install.sh --codex`.
@@ -61,17 +61,17 @@ Start a new Codex task after installation so its command index is rebuilt.
 #### Cross-Platform (Recommended — Windows, macOS, Linux)
 Install directly via `npx` (requires Node.js):
 ```bash
-npx github:rahul-k-r/rkr-claude-plugins install
+npx github:rahul-k-r/rkr-plugins install
 ```
 
 To update to the latest version:
 ```bash
-npx github:rahul-k-r/rkr-claude-plugins update
+npx github:rahul-k-r/rkr-plugins update
 ```
 
 To cleanly uninstall the plugin and remove safety hooks:
 ```bash
-npx github:rahul-k-r/rkr-claude-plugins uninstall
+npx github:rahul-k-r/rkr-plugins uninstall
 ```
 
 ---
@@ -80,12 +80,12 @@ npx github:rahul-k-r/rkr-claude-plugins uninstall
 
 ##### Windows (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/rahul-k-r/rkr-claude-plugins/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/rahul-k-r/rkr-plugins/main/install.ps1 | iex
 ```
 
 ##### macOS / Linux (Bash)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rahul-k-r/rkr-claude-plugins/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rahul-k-r/rkr-plugins/main/install.sh | bash
 ```
 
 *(If running inside a locally cloned repository, you can run `./install.ps1` or `./install.sh` directly)*
@@ -121,7 +121,7 @@ If you have cloned this repository and are developing plugins locally, Antigravi
 ## Three-Harness Architecture
 
 ```
-rkr-claude-plugins/
+rkr-plugins/
 ├── .claude-plugin/              # Claude Code marketplace definition
 │   └── marketplace.json
 ├── .agents/                     # Antigravity workspace configuration
@@ -155,4 +155,4 @@ rkr-claude-plugins/
 ## License & Author
 
 - **Author**: Rahul (<rahulkundapurr@gmail.com>)
-- **Repository**: [github.com/rahul-k-r/rkr-claude-plugins](https://github.com/rahul-k-r/rkr-claude-plugins)
+- **Repository**: [github.com/rahul-k-r/rkr-plugins](https://github.com/rahul-k-r/rkr-plugins)

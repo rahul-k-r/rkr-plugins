@@ -31,20 +31,20 @@ The `sdlc` plugin implements a disciplined, verify-before-done software developm
 
 ```bash
 # Add marketplace & install
-claude plugin marketplace add rahul-k-r/rkr-claude-plugins
-claude plugin install sdlc@rkr-claude-plugins
+claude plugin marketplace add rahul-k-r/rkr-plugins
+claude plugin install sdlc@rkr-plugins
 ```
 
 ### Codex
 
 ```bash
-npx github:rahul-k-r/rkr-claude-plugins codex-install
+npx github:rahul-k-r/rkr-plugins codex-install
 ```
 
 Refresh after updating the repository with:
 
 ```bash
-npx github:rahul-k-r/rkr-claude-plugins codex-update
+npx github:rahul-k-r/rkr-plugins codex-update
 ```
 
 Codex exposes the command adapters as `/sdlc:<command>`. Start a new Codex task after
@@ -60,18 +60,18 @@ pairs; adjacent tiers change one axis at a time, and every dispatch passes both 
 #### Cross-Platform (`npx` — Recommended)
 ```bash
 # Install plugin & configure safety hooks
-npx github:rahul-k-r/rkr-claude-plugins install
+npx github:rahul-k-r/rkr-plugins install
 
 # Update to latest version
-npx github:rahul-k-r/rkr-claude-plugins update
+npx github:rahul-k-r/rkr-plugins update
 
 # Uninstall plugin & remove hooks
-npx github:rahul-k-r/rkr-claude-plugins uninstall
+npx github:rahul-k-r/rkr-plugins uninstall
 ```
 
 #### OS Shell Scripts
-- **Windows (PowerShell)**: `irm https://raw.githubusercontent.com/rahul-k-r/rkr-claude-plugins/main/install.ps1 | iex`
-- **macOS / Linux (Bash)**: `curl -fsSL https://raw.githubusercontent.com/rahul-k-r/rkr-claude-plugins/main/install.sh | bash`
+- **Windows (PowerShell)**: `irm https://raw.githubusercontent.com/rahul-k-r/rkr-plugins/main/install.ps1 | iex`
+- **macOS / Linux (Bash)**: `curl -fsSL https://raw.githubusercontent.com/rahul-k-r/rkr-plugins/main/install.sh | bash`
 
 ---
 

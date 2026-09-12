@@ -13,13 +13,13 @@ if [ "${1:-}" = "--codex" ]; then
     CODEX_PATH=$(command -v codex)
     echo " [OK] Found Codex CLI at: $CODEX_PATH"
 
-    echo -e "\n==> Updating the rkr-claude-plugins marketplace in Codex..."
-    if ! "$CODEX_PATH" plugin marketplace upgrade "rkr-claude-plugins"; then
-        "$CODEX_PATH" plugin marketplace add "rahul-k-r/rkr-claude-plugins" --ref main
+    echo -e "\n==> Updating the rkr-plugins marketplace in Codex..."
+    if ! "$CODEX_PATH" plugin marketplace upgrade "rkr-plugins"; then
+        "$CODEX_PATH" plugin marketplace add "rahul-k-r/rkr-plugins" --ref main
     fi
 
-    echo -e "\n==> Installing sdlc@rkr-claude-plugins into Codex..."
-    "$CODEX_PATH" plugin add "sdlc@rkr-claude-plugins"
+    echo -e "\n==> Installing sdlc@rkr-plugins into Codex..."
+    "$CODEX_PATH" plugin add "sdlc@rkr-plugins"
     echo " [OK] Codex sdlc plugin installed. Start a new Codex task before testing /sdlc:story-run."
     exit 0
 fi
@@ -55,13 +55,13 @@ if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/sdlc/plugin.json" ]; then
 else
     echo -e "\n==> Downloading plugin from GitHub..."
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'sdlc-pkg')
-    TAR_URL="https://github.com/rahul-k-r/rkr-claude-plugins/archive/refs/heads/main.tar.gz"
+    TAR_URL="https://github.com/rahul-k-r/rkr-plugins/archive/refs/heads/main.tar.gz"
 
     if curl -fsSL "$TAR_URL" | tar -xz -C "$TEMP_DIR" 2>/dev/null; then
-        SDLC_SOURCE="$TEMP_DIR/rkr-claude-plugins-main/sdlc"
+        SDLC_SOURCE="$TEMP_DIR/rkr-plugins-main/sdlc"
     else
         echo "Tarball download failed, falling back to git clone..."
-        git clone --depth 1 "https://github.com/rahul-k-r/rkr-claude-plugins.git" "$TEMP_DIR/clone" || true
+        git clone --depth 1 "https://github.com/rahul-k-r/rkr-plugins.git" "$TEMP_DIR/clone" || true
         SDLC_SOURCE="$TEMP_DIR/clone/sdlc"
     fi
 

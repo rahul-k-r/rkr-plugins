@@ -27,18 +27,18 @@ if ($Codex) {
     }
     Write-Success "Found Codex CLI: $codexPath"
 
-    Write-Step "Updating the rkr-claude-plugins marketplace in Codex..."
-    & $codexPath plugin marketplace upgrade "rkr-claude-plugins"
+    Write-Step "Updating the rkr-plugins marketplace in Codex..."
+    & $codexPath plugin marketplace upgrade "rkr-plugins"
     if ($LASTEXITCODE -ne 0) {
-        & $codexPath plugin marketplace add "rahul-k-r/rkr-claude-plugins" --ref main
+        & $codexPath plugin marketplace add "rahul-k-r/rkr-plugins" --ref main
         if ($LASTEXITCODE -ne 0) {
-            Write-Err "Could not add the rkr-claude-plugins marketplace."
+            Write-Err "Could not add the rkr-plugins marketplace."
             exit $LASTEXITCODE
         }
     }
 
-    Write-Step "Installing sdlc@rkr-claude-plugins into Codex..."
-    & $codexPath plugin add "sdlc@rkr-claude-plugins"
+    Write-Step "Installing sdlc@rkr-plugins into Codex..."
+    & $codexPath plugin add "sdlc@rkr-plugins"
     if ($LASTEXITCODE -ne 0) {
         Write-Err "Codex plugin installation failed."
         exit $LASTEXITCODE
@@ -77,13 +77,13 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "sdlc\plugin.json")))
     $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("sdlc-pkg-" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
-    $zipUrl = "https://github.com/rahul-k-r/rkr-claude-plugins/archive/refs/heads/main.zip"
+    $zipUrl = "https://github.com/rahul-k-r/rkr-plugins/archive/refs/heads/main.zip"
     $zipFile = Join-Path $tempDir "repo.zip"
 
     try {
         Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile -UseBasicParsing
         Expand-Archive -Path $zipFile -DestinationPath $tempDir -Force
-        $extractedRoot = Join-Path $tempDir "rkr-claude-plugins-main"
+        $extractedRoot = Join-Path $tempDir "rkr-plugins-main"
         if (-not (Test-Path (Join-Path $extractedRoot "sdlc\plugin.json"))) {
             throw "Downloaded archive does not contain sdlc/plugin.json"
         }
@@ -94,7 +94,7 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "sdlc\plugin.json")))
         Write-Host "Archive download failed ($($_.Exception.Message)), falling back to git..."
         $sdlcSource = Join-Path $tempDir "clone\sdlc"
         try {
-            git clone --depth 1 "https://github.com/rahul-k-r/rkr-claude-plugins.git" (Join-Path $tempDir "clone") 2>$null
+            git clone --depth 1 "https://github.com/rahul-k-r/rkr-plugins.git" (Join-Path $tempDir "clone") 2>$null
         } catch {
             # git missing or clone failed — fall through to the shared error path below
         }
