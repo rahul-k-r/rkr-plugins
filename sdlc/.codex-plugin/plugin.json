@@ -1,6 +1,6 @@
 {
   "name": "sdlc",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Personal story SDLC workflows for design review, implementation, review, and release gates.",
   "skills": "./skills/",
   "author": {

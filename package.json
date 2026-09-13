@@ -1,6 +1,6 @@
 {
   "name": "rkr-plugins",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "SDLC plugin for Claude Code and Google Antigravity",
   "author": "Rahul",
   "license": "MIT",
