@@ -1,5 +1,5 @@
 {
-  "name": "rkr-claude-plugins",
+  "name": "rkr-plugins",
   "interface": {
     "displayName": "Rahul's Personal Plugins"
   },

@@ -10,10 +10,10 @@ repo you use this plugin in, whatever tracker (or none) that repo uses.
 
 ```bash
 # In Claude Code — add the marketplace (once per machine):
-/plugin marketplace add rkr-claude-plugins
+/plugin marketplace add rkr-plugins
 
 # Install the plugin (user scope, so it's available in every repo):
-/plugin install sdlc@rkr-claude-plugins
+/plugin install sdlc@rkr-plugins
 ```
 
 **Per new repo:** run `/sdlc:init` to bootstrap `docs/design-notes/`,

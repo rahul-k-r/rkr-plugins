@@ -11,8 +11,13 @@ Every `sdlc` command/agent that touches a ticket does so through this file — n
 
 1. **Read `.sdlc/config.json`** at the repo root (created/updated by `/sdlc:init`): `{ "tracker": "jira"|"linear"|"none", "trackerProjectKey": "..." }`. If present, this wins — stop here.
 2. **Else, detect which MCP tool family is registered this session:**
-   - Jira: any of `mcp__atlassian__*`, `mcp__atlassian-tractionlayer__*`, `mcp__atlassian-idvibes__*`, `mcp__plugin_traction-atlassian_atlassian__*`.
-   - Linear: `mcp__claude_ai_Linear__*` (or an equivalent `mcp__*linear*` server).
+   - **Claude Code**:
+     - Jira: any of `mcp__atlassian__*`, `mcp__atlassian-tractionlayer__*`, `mcp__atlassian-idvibes__*`, `mcp__plugin_traction-atlassian_atlassian__*`.
+     - Linear: `mcp__claude_ai_Linear__*` (or an equivalent `mcp__*linear*` server).
+   - **Antigravity**:
+     - Check available MCP servers in session context (`<mcp_servers>`):
+       - Linear: `linear-mcp-server` (lazy tools called via `call_mcp_tool(ServerName: "linear-mcp-server", ToolName: "...", Arguments: "...")` or eager `mcp_linear_*`).
+       - Jira: `jira-mcp-server`, `atlassian`, etc. (lazy tools called via `call_mcp_tool` or eager `mcp_jira_*`).
    - Exactly one family present → use it, and offer to persist the choice to `.sdlc/config.json` (don't write without asking — the developer may be trying it out, or working across repos with different trackers in one session).
    - Both present → ask which one this repo uses.
    - Neither present → `tracker: none`.

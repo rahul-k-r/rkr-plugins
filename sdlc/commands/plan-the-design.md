@@ -10,7 +10,7 @@ argument-hint: "<STORY-KEY> [--plain] (e.g. AGL-19)"
 
 ## Output style (`--plain`)
 
-`--plain` (anywhere in `$ARGUMENTS`) conducts **the entire deliberation — not just Phase 0.5 — per `skills/plain-language/STANDARD.md`** instead of the default engineer-level voice: Phase 1's scope framing, Phase 2's candidate issues, Phase 3's alternatives, stress-lens prompts, and decision summaries, Phase 4's boundaries, and the Phase 5 walkthrough of the draft are all phrased so a developer without deep engineering background can reason and decide. Phase 0.5's briefing is this standard's origin and happens in both modes. The design note itself, obligation comments (or their manual-tracking equivalent), and everything written to disk keep their fixed technical form either way — in plain mode, explain in chat what the draft says before asking for approval.
+`--plain` (anywhere in `$ARGUMENTS`) conducts **the entire deliberation — not just Phase 0.5 — per `internal/plain-language/STANDARD.md`** instead of the default engineer-level voice: Phase 1's scope framing, Phase 2's candidate issues, Phase 3's alternatives, stress-lens prompts, and decision summaries, Phase 4's boundaries, and the Phase 5 walkthrough of the draft are all phrased so a developer without deep engineering background can reason and decide. Phase 0.5's briefing is this standard's origin and happens in both modes. The design note itself, obligation comments (or their manual-tracking equivalent), and everything written to disk keep their fixed technical form either way — in plain mode, explain in chat what the draft says before asking for approval.
 
 ---
 
@@ -18,7 +18,7 @@ argument-hint: "<STORY-KEY> [--plain] (e.g. AGL-19)"
 
 Read all of the following in parallel. Do not present findings until Phase 1.
 
-1. **Resolve the ticket.** Resolve the tracker per `skills/tracker-adapter/SKILL.md` (read `.sdlc/config.json`, or detect the registered MCP tool family). If a real tracker (`jira`|`linear`) resolved and `$STORY_KEY` looks like one of its keys, fetch it via the adapter's `get_issue` op. Extract: title, full acceptance criteria, story type, linked issues, current status.
+1. **Resolve the ticket.** Resolve the tracker per `internal/tracker-adapter/SKILL.md` (read `.sdlc/config.json`, or detect the registered MCP tool family). If a real tracker (`jira`|`linear`) resolved and `$STORY_KEY` looks like one of its keys, fetch it via the adapter's `get_issue` op. Extract: title, full acceptance criteria, story type, linked issues, current status.
 2. **Read repo ground truth:**
    - `DECISIONS.md` and any ADRs in `docs/adr/` relevant to this story's domain.
    - Existing code, schemas, and packages touched by the story's scope (use the AC and package layout to target reads — do not scan the entire repo).
@@ -149,8 +149,8 @@ Present the full draft to the developer:
 
 On approval:
 
-1. **Write the design note** to `docs/design-notes/$STORY_KEY.md`. Under `.sdlc/config.json`'s `localDocs: true` (`skills/local-docs/SKILL.md`), this is also the note's *permanent* location — nothing later copies or commits it into a worktree.
-2. **Post cross-story obligations.** For each obligation identified in Q4, post a traceability comment on the target ticket via the tracker-adapter's `add_comment` op (`skills/tracker-adapter/SKILL.md`), whichever tracker (`jira`|`linear`) resolved this session. Format: "Design note for $STORY_KEY establishes obligation: <obligation text>. See `docs/design-notes/$STORY_KEY.md` §5." **If `tracker: none` resolved (or the write fails)**, this command doesn't switch to a full incognito mode — it's an interactive session, not an autonomous run — so just print each obligation to the developer instead, and tell them plainly it needs to be tracked manually; never drop one silently.
+1. **Write the design note** to `docs/design-notes/$STORY_KEY.md`. Under `.sdlc/config.json`'s `localDocs: true` (`internal/local-docs/SKILL.md`), this is also the note's *permanent* location — nothing later copies or commits it into a worktree.
+2. **Post cross-story obligations.** For each obligation identified in Q4, post a traceability comment on the target ticket via the tracker-adapter's `add_comment` op (`internal/tracker-adapter/SKILL.md`), whichever tracker (`jira`|`linear`) resolved this session. Format: "Design note for $STORY_KEY establishes obligation: <obligation text>. See `docs/design-notes/$STORY_KEY.md` §5." **If `tracker: none` resolved (or the write fails)**, this command doesn't switch to a full incognito mode — it's an interactive session, not an autonomous run — so just print each obligation to the developer instead, and tell them plainly it needs to be tracked manually; never drop one silently.
 3. **Report graduation backlog.** Print a summary of decisions needing graduation beyond the note:
    - Decisions → ADR (with proposed ADR title).
    - Decisions → DECISIONS.md (with proposed one-liner).

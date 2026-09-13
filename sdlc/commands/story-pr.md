@@ -18,13 +18,13 @@ Arguments arrive as `$ARGUMENTS`: `$1` is an optional story key — a real track
 **Flags:**
 - `--review` — run a pre-PR self-review of the diff (off by default; see step 3a). Catches the obvious stuff before an external reviewer does.
 - `--fix` — with `--review`, apply the high-confidence findings to the working tree instead of only reporting them. Ignored without `--review`.
-- `--plain` — narrate everything explained to the developer — the diff walkthrough, self-review findings and their disposition options, and the report-back — per `skills/plain-language/STANDARD.md` instead of the default engineer-level voice; commit messages and the PR title/body keep their fixed technical form either way.
+- `--plain` — narrate everything explained to the developer — the diff walkthrough, self-review findings and their disposition options, and the report-back — per `internal/plain-language/STANDARD.md` instead of the default engineer-level voice; commit messages and the PR title/body keep their fixed technical form either way.
 
 ## Steps
 
 0. **Resolve project config** from the target repo's `CLAUDE.md`: project key, commit convention, verify commands, and the names of the required CI checks (from `CLAUDE.md` or `.github/workflows/`). Also resolve `branchModel` from `.sdlc/config.json` — it decides the base branch for every step below.
 
-0a. **Resolve the worktree, if any.** Check `docs/stories/<KEY>/story-state.json` for a `worktree` field, using the key from `$1` or as derived above (per `skills/worktree-mode/SKILL.md`) — the file may not exist (this story never went through `/sdlc:story-start`'s worktree creation), in which case there's nothing to resolve and everything below runs in the current checkout exactly as before. When it resolves to a path, every git command below targets it via `git -C <worktree>`, and `gh pr create` via a `cd <worktree> &&` prefix, instead of the session's own checkout.
+0a. **Resolve the worktree, if any.** Check `docs/stories/<KEY>/story-state.json` for a `worktree` field, using the key from `$1` or as derived above (per `internal/worktree-mode/SKILL.md`) — the file may not exist (this story never went through `/sdlc:story-start`'s worktree creation), in which case there's nothing to resolve and everything below runs in the current checkout exactly as before. When it resolves to a path, every git command below targets it via `git -C <worktree>`, and `gh pr create` via a `cd <worktree> &&` prefix, instead of the session's own checkout.
 
 1. **Confirm the branch.** `git rev-parse --abbrev-ref HEAD` (`-C <worktree>` when resolved above). If on `main`, or (under `branchModel: sprint`) any `sprint/*` branch, **stop** — never commit directly to a base branch. Offer to cut a story branch from the resolved base (`feat|fix|chore/<key-lower>-slug`), then continue on it.
 
@@ -40,7 +40,7 @@ Arguments arrive as `$ARGUMENTS`: `$1` is an optional story key — a real track
    - Apply the "fix now" items (`--fix` may pre-apply the high-confidence ones, but per-finding sign-off still applies). After any fix, re-run the local gate and re-stage.
    - Only once the list has no undecided items — proceed. If the user steps away, stop here rather than opening the PR with findings unaddressed.
 
-3b. **Check the design note is current.** If `docs/design-notes/<KEY>.md` exists (in `worktree` when set — that's where it was actually committed, per `skills/worktree-mode/SKILL.md`), check it for uncommitted changes specifically (`git status`/`git diff` on that path, `-C <worktree>` when set) — don't let it ride along silently or get left behind. If the implementation deviated from the design during this story, fill §7 (Implementation Findings) now; otherwise confirm it says "no material deviations." Stage and include it in this PR's commit(s).
+3b. **Check the design note is current.** If `docs/design-notes/<KEY>.md` exists (in `worktree` when set — that's where it was actually committed, per `internal/worktree-mode/SKILL.md`), check it for uncommitted changes specifically (`git status`/`git diff` on that path, `-C <worktree>` when set) — don't let it ride along silently or get left behind. If the implementation deviated from the design during this story, fill §7 (Implementation Findings) now; otherwise confirm it says "no material deviations." Stage and include it in this PR's commit(s).
 
 4. **Commit** per the `/sdlc:commit` convention: atomic commits, subject prefixed with the key, a body explaining the *why* when the change isn't self-explanatory.
 

@@ -5,7 +5,7 @@ description: Resolves whether design notes and ADRs are committed artifacts (the
 
 # Skill: local-docs
 
-The plugin's original design treats `docs/design-notes/<KEY>.md` and `docs/adr/*` as **committed artifacts that ride the branch** — written into a worktree when one's in play, `git add`ed, and committed alongside the code (see `skills/worktree-mode/SKILL.md`'s "What targets the worktree vs. what stays at the session's root"). Some repos don't want that — design notes stay as working reference, never enter the repo's history at all. This skill is the config knob and the resulting behavior change; it doesn't replace worktree-mode, it overrides one specific thing worktree-mode assumes by default.
+The plugin's original design treats `docs/design-notes/<KEY>.md` and `docs/adr/*` as **committed artifacts that ride the branch** — written into a worktree when one's in play, `git add`ed, and committed alongside the code (see `internal/worktree-mode/SKILL.md`'s "What targets the worktree vs. what stays at the session's root"). Some repos don't want that — design notes stay as working reference, never enter the repo's history at all. This skill is the config knob and the resulting behavior change; it doesn't replace worktree-mode, it overrides one specific thing worktree-mode assumes by default.
 
 ## Resolution
 
@@ -26,4 +26,4 @@ Exactly what's already built: written into the worktree (or the current checkout
 
 ## Interaction with `plan-the-design` (interactive)
 
-An interactive design-review session runs before any branch or worktree necessarily exists, so it always writes `docs/design-notes/<KEY>.md` at the session's own root regardless of `localDocs` — that part doesn't change. What changes is what happens *next*: under `localDocs: false`, a later `story-start`/`story-run` copies that file into the worktree and commits it (per `skills/worktree-mode/SKILL.md`'s Step-1 handling); under `localDocs: true`, it just stays where it already is — there's nothing to copy or commit.
+An interactive design-review session runs before any branch or worktree necessarily exists, so it always writes `docs/design-notes/<KEY>.md` at the session's own root regardless of `localDocs` — that part doesn't change. What changes is what happens *next*: under `localDocs: false`, a later `story-start`/`story-run` copies that file into the worktree and commits it (per `internal/worktree-mode/SKILL.md`'s Step-1 handling); under `localDocs: true`, it just stays where it already is — there's nothing to copy or commit.

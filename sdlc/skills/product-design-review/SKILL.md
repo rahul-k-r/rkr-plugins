@@ -3,10 +3,20 @@ name: product-design-review
 description: Schemas, severity rubric, archetype defaults, and shared rules for the product-level design audit pipeline. Loaded by /sdlc:product-design-review and its agents' dispatch prompts.
 ---
 
-# product-design-review — shared contracts
+# product-design-review — shared contracts and execution
 
-Everything here is normative for the pipeline. The command file owns the
-process; this file owns the shapes and the rubric.
+> **Path Resolution**: Resolve all referenced plugin paths (`commands/...`, `agents/...`, `skills/...`) relative to the plugin directory (two levels above this `SKILL.md`).
+> **Subagent Dispatch**:
+> Wherever `commands/product-design-review.md` dispatches agents (`surveyor`, `cartographer`, `flow-tracer`, `panelist`, `moderator`, `verifier`, `publisher`):
+> - **Codex:** resolve `model` and `reasoning_effort` through `internal/codex-model-effort.md`, then use `multi_agent_v1__spawn_agent`.
+> - **Antigravity:** resolve `Model` through `internal/gemini-model-effort/SKILL.md`, then use `invoke_subagent` with the agent name as `Role`.
+> - **Claude Code:** when this adapter is selected directly, follow the source command's `Task` dispatch.
+> - Pass the verbatim persona from `agents/<name>.md` plus task context.
+
+When invoked as a command (`/sdlc:product-design-review [options]`):
+Read `commands/product-design-review.md` (in the plugin directory) in full and execute the phases: INVENTORY -> PROFILE GATE -> FLOW SWEEP -> DELIBERATE -> VERIFY+SYNTHESIZE -> HUMAN SESSIONS -> PUBLISH.
+
+---
 
 ## Product Profile checklist
 
@@ -172,7 +182,7 @@ no unresolved BLOCKER/GAP."
 
 The `create-ticket`/`update-ac`/`comment`/`link` ops map 1:1 onto the
 tracker-adapter's `create_issue`/`update_field`/`add_comment`/`create_link`
-ops (`skills/tracker-adapter/SKILL.md`) and are executed by `publisher`
+ops (`internal/tracker-adapter/SKILL.md`) and are executed by `publisher`
 against whichever tracker resolved for the repo (Jira or Linear — see that
 file for the exact tool mapping, including the `link`→comment fallback on
 Linear). `doc-change` entries (TDD amendments, DECISIONS entries, ADR

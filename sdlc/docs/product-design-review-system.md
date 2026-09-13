@@ -69,7 +69,7 @@ Everything else — state file + checkpoint/resume in any chat, single-JSON-bloc
 
 ## 5. Genericity: one command, three project archetypes
 
-Nothing project-specific lives in the pipeline. Each repo declares an `## product-design-review` block in its `CLAUDE.md`: the **archetype**, the input documents, optional lens/partition overrides, and optionally an **evaluation framework**. The tracker itself is a separate, repo-level configuration surface — `.sdlc/config.json`'s `tracker`/`trackerProjectKey`, resolved once per repo per `skills/tracker-adapter/SKILL.md`, not part of this block. The archetype changes what a "flow" means and which lenses get weighted — not the pipeline:
+Nothing project-specific lives in the pipeline. Each repo declares an `## product-design-review` block in its `CLAUDE.md`: the **archetype**, the input documents, optional lens/partition overrides, and optionally an **evaluation framework**. The tracker itself is a separate, repo-level configuration surface — `.sdlc/config.json`'s `tracker`/`trackerProjectKey`, resolved once per repo per `internal/tracker-adapter/SKILL.md`, not part of this block. The archetype changes what a "flow" means and which lenses get weighted — not the pipeline:
 
 | | `agentic-app` (e.g. InternalAuditAI) | `engine` (e.g. SKB, KPG) | `platform` (e.g. AgentLane) |
 |---|---|---|---|
