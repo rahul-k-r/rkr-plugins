@@ -143,7 +143,7 @@ if (-not $SkipHooks) {
         }
     }
 
-    $installedPluginDir = (Join-Path $configDir "plugins\sdlc").Replace('\', '/')
+    $installedPluginDir = Join-Path $configDir "plugins\sdlc"
     $sourceHooksPath = Join-Path $configDir "plugins\sdlc\hooks.json"
 
     if (Test-Path $sourceHooksPath) {
@@ -157,8 +157,8 @@ if (-not $SkipHooks) {
                     if ($key -eq "command" -and $item[$key] -is [string]) {
                         $cmd = $item[$key]
                         if ($cmd -match '^node\s+(.+)$') {
-                            $scriptRel = $matches[1].Trim('"')
-                            $copy[$key] = "node `"$pluginDir/$scriptRel`""
+                            $scriptRel = $matches[1].Trim('"').Replace('/', '\')
+                            $copy[$key] = "node $pluginDir\$scriptRel"
                         } else {
                             $copy[$key] = $cmd
                         }

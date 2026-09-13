@@ -120,7 +120,7 @@ function resolveCommands(obj) {
   for (const [key, value] of Object.entries(obj)) {
     if (key === 'command' && typeof value === 'string') {
       result[key] = value.replace(/node\s+([^\s"]+)/, (match, scriptPath) => {
-        return \`node "\${path.posix.join(pluginDir, scriptPath)}"\`;
+        return \`node \${path.posix.join(pluginDir, scriptPath)}\`;
       });
     } else {
       result[key] = resolveCommands(value);

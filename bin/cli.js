@@ -125,7 +125,7 @@ function configureHooks(sdlcDir) {
     return;
   }
 
-  const pluginInstalledDir = path.join(configDir, 'plugins', 'sdlc').replace(/\\/g, '/');
+  const pluginInstalledDir = path.join(configDir, 'plugins', 'sdlc');
   const sourceRaw = fs.readFileSync(sourceHooksFile, 'utf8');
   const sourceConfig = JSON.parse(sourceRaw);
   const sdlcHookDef = sourceConfig.sdlc || sourceConfig;
@@ -137,8 +137,8 @@ function configureHooks(sdlcDir) {
     for (const [key, value] of Object.entries(obj)) {
       if (key === 'command' && typeof value === 'string') {
         result[key] = value.replace(/node\s+([^\s"]+)/, (match, scriptPath) => {
-          const absoluteScript = path.posix.join(pluginInstalledDir, scriptPath.replace(/\\/g, '/'));
-          return `node "${absoluteScript}"`;
+          const absoluteScript = path.join(pluginInstalledDir, ...scriptPath.split(/[\\/]/));
+          return `node ${absoluteScript}`;
         });
       } else {
         result[key] = resolveCommands(value);

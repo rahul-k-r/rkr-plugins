@@ -40,9 +40,11 @@ as safe as Claude Code's.** It's meaningfully weaker, disclosed on purpose — s
 2. **Read `hooks.json`** (the canonical source config at plugin root — containing relative
    `"command"` values like `"node hooks-antigravity/gate-git.js"`) and **rewrite its `command` fields to
    absolute paths** pointing at the files located in Step 1, e.g.
-   `"node C:/actual/path/hooks-antigravity/gate-git.js"`. This is required, not cosmetic: once
+   `node C:/actual/path/hooks-antigravity/gate-git.js`. This is required, not cosmetic: once
    merged into the global config, the working directory Antigravity runs a hook command from is
    no longer guaranteed to be this plugin's own folder, so a relative path silently breaks.
+   *(Important: do not wrap the path in escaped double-quotes, as Antigravity executes hook arguments
+   directly without a shell, causing Node to treat extra quotes as part of the filename and fail).*
 
 3. **Read the user's global hook config** (Windows: `%USERPROFILE%\.gemini\config\hooks.json`;
    confirm the real path for the current OS/install rather than assuming). If it doesn't exist,
