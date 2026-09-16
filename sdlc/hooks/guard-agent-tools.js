@@ -35,11 +35,16 @@ const FULL_WRITE_OPS = [
 ];
 // ToolSearch is how deferred MCP tools (tracker ops included) get loaded, so
 // every scoped agent needs it or it can't reach the ops it's allowed.
+// SubagentHandback is the harness's own return channel — without it an agent
+// completes its work and is then denied on the call that delivers the report.
+// Edit accompanies Write wherever Write is granted: Write can already replace a
+// file wholesale, so withholding Edit restricts nothing and only denies the agent
+// the idiomatic tool for an artifact that already exists (a re-run or --resume).
 const AGENT_SCOPE = {
-  intake: { builtins: ['Read', 'Write', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
-  surveyor: { builtins: ['Read', 'Write', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
-  verifier: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch'], ops: READ_OPS },
-  publisher: { builtins: ['Read', 'ToolSearch'], ops: FULL_WRITE_OPS },
+  intake: { builtins: ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'ToolSearch', 'SubagentHandback'], ops: READ_OPS },
+  surveyor: { builtins: ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'ToolSearch', 'SubagentHandback'], ops: READ_OPS },
+  verifier: { builtins: ['Read', 'Grep', 'Glob', 'ToolSearch', 'SubagentHandback'], ops: READ_OPS },
+  publisher: { builtins: ['Read', 'ToolSearch', 'SubagentHandback'], ops: FULL_WRITE_OPS },
 };
 
 let input = '';
@@ -51,14 +56,18 @@ process.stdin.on('end', () => {
   } catch {
     process.exit(0); // unparseable — don't block unrelated work
   }
+  // `null` and scalars parse fine but have no fields — treat as unparseable.
+  if (!payload || typeof payload !== 'object') process.exit(0);
 
   // Plugin agents arrive plugin-qualified (`sdlc:intake`); the table is keyed
   // bare. Strip only this plugin's own prefix — a bare-colon name from some
   // *other* plugin (e.g. "otherplugin:intake") must never fall through to
   // matching our "intake" entry.
-  const raw = payload.agent_type || '';
+  const raw = typeof payload.agent_type === 'string' ? payload.agent_type : '';
   const agentType = raw.startsWith('sdlc:') ? raw.slice(5) : raw.includes(':') ? '' : raw;
-  const scope = agentType && AGENT_SCOPE[agentType];
+  // Own-property lookup only: a name like "constructor" would otherwise resolve
+  // to an inherited Object.prototype member and crash on scope.builtins.
+  const scope = agentType && Object.hasOwn(AGENT_SCOPE, agentType) ? AGENT_SCOPE[agentType] : null;
   if (!scope) process.exit(0); // orchestrator, or an agent this hook doesn't govern
 
   const toolName = payload.tool_name || '';
