@@ -5,6 +5,9 @@
   "author": "Rahul",
   "license": "MIT",
   "bin": "./bin/cli.js",
+  "scripts": {
+    "test": "node --test"
+  },
   "files": [
     "bin",
     "sdlc",
