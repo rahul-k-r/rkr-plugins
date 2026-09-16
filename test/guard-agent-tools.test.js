@@ -207,9 +207,11 @@ describe('agent identity resolution', () => {
     assert.strictEqual(statusOf('sdlc:sdlc:intake', 'Bash'), ALLOW);
   });
 
+  // reviewer/integrator are deliberately absent here — their Bash use is gated
+  // separately; see inspect-only-bash.test.js.
   test('ungoverned and orchestrator calls pass through untouched', () => {
     assert.strictEqual(statusOf('sdlc:coder', 'Bash'), ALLOW);
-    assert.strictEqual(statusOf('sdlc:reviewer', 'Bash'), ALLOW);
+    assert.strictEqual(statusOf('sdlc:architect', 'Bash'), ALLOW);
     assert.strictEqual(statusOf('', 'Bash'), ALLOW);
     assert.strictEqual(runHook(GUARD, { tool_name: 'Bash' }).status, ALLOW);
     assert.strictEqual(runHook(GUARD, {}).status, ALLOW);

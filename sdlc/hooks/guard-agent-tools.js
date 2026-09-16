@@ -47,6 +47,38 @@ const AGENT_SCOPE = {
   publisher: { builtins: ['Read', 'ToolSearch', 'SubagentHandback'], ops: FULL_WRITE_OPS },
 };
 
+// reviewer and integrator ARE scoped by their own `tools:` frontmatter — but that
+// grants Bash, and Bash can mutate the working tree, which both charters forbid in
+// prose ("no edits"; "never `gh pr checkout`, `git switch`, or anything that mutates
+// the shared working tree" — other reviewers may be using it concurrently).
+// Frontmatter can say which tools, never what a command may do, so that half is
+// enforced here.
+//
+// This is an allowlist, not a shell classifier. These agents don't run commands a
+// user wrote; the pipeline dispatches them a small set authored in this plugin, and
+// their own docs already enumerate it. Anything outside it is denied rather than
+// inspected for whether it happens to mutate — deciding that in general is the
+// unbounded problem this deliberately avoids.
+const INSPECT_ONLY = new Set(['reviewer', 'integrator']);
+const GIT_C = String.raw`(?:-C\s+(?:"[^"]*"|'[^']*'|\S+)\s+)?`;
+const INSPECT_SEGMENT = [
+  /^cd\s+\S/, // the worktree hop the dispatch prescribes
+  new RegExp(String.raw`^git\s+${GIT_C}(?:diff|log|show|status|rev-parse)\b`),
+  /^gh\s+pr\s+(?:view|diff)\b/,
+  // gh api without a write flag — the comment-ingest read the reviewer is told to do
+  /^gh\s+api\b(?!.*(?:\s-X\b|\s--method\b|\s-f\b|\s--field\b|\s--input\b))/,
+  /^(?:head|tail|wc|sort|uniq|cat|grep|rg)\b/, // read-only filters over the above
+];
+// Redirection and command substitution would smuggle arbitrary work past the
+// per-segment check, so they disqualify the whole command.
+const UNSAFE_SHELL = /[>`]|\$\(/;
+
+function inspectionOnly(cmd) {
+  if (!cmd || UNSAFE_SHELL.test(cmd)) return false;
+  const segments = cmd.split(/&&|\|\||\||;/).map((s) => s.trim()).filter(Boolean);
+  return segments.length > 0 && segments.every((s) => INSPECT_SEGMENT.some((re) => re.test(s)));
+}
+
 let input = '';
 process.stdin.on('data', (d) => (input += d));
 process.stdin.on('end', () => {
@@ -68,7 +100,23 @@ process.stdin.on('end', () => {
   // Own-property lookup only: a name like "constructor" would otherwise resolve
   // to an inherited Object.prototype member and crash on scope.builtins.
   const scope = agentType && Object.hasOwn(AGENT_SCOPE, agentType) ? AGENT_SCOPE[agentType] : null;
-  if (!scope) process.exit(0); // orchestrator, or an agent this hook doesn't govern
+  if (!scope) {
+    // Not tracker-scoped, but reviewer/integrator still have their Bash use gated.
+    if (INSPECT_ONLY.has(agentType) && (payload.tool_name || '') === 'Bash') {
+      const command = (payload.tool_input && payload.tool_input.command) || '';
+      if (!inspectionOnly(command)) {
+        console.error(
+          `sdlc gate: "${agentType}" reviews from the diff and must not mutate the working tree ` +
+            `(see its own "no edits" / "never gh pr checkout, git switch" rules) — "${command}" ` +
+            `isn't one of: git diff/log/show, gh pr view/diff, a read-only gh api, or a read-only ` +
+            `filter over those. If a check genuinely needs the PR's code executed, report it as ` +
+            `unverifiable-from-diff instead of checking it out.`
+        );
+        process.exit(2);
+      }
+    }
+    process.exit(0); // orchestrator, or an agent this hook doesn't govern
+  }
 
   const toolName = payload.tool_name || '';
   if (scope.builtins.includes(toolName)) process.exit(0);
