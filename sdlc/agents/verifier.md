@@ -1,6 +1,9 @@
 ---
 name: verifier
 description: Adversarially attempts to refute each audit finding against the actual documents and tickets before it reaches humans — the false-positive filter. Use only within the product-design-review pipeline.
+# Deliberately carries no tool allowlist: it must reach a tracker MCP server whose
+# name isn't knowable here, and frontmatter has no wildcard across server names.
+# Scoped at runtime by hooks/guard-agent-tools.js — see internal/tracker-adapter/SKILL.md.
 model: opus
 ---
 
