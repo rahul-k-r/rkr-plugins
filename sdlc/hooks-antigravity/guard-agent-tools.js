@@ -45,7 +45,7 @@
 const READ_OPS = [
   'getJiraIssue', 'jira_get_issue',
   'searchJiraIssuesUsingJql', 'jira_search',
-  'get_issue', 'list_issues', 'get_workspace',
+  'get_issue', 'list_issues',
 ];
 const COMMENT_OPS = ['addCommentToJiraIssue', 'jira_add_comment', 'save_comment'];
 const FULL_WRITE_OPS = [
@@ -60,7 +60,7 @@ const FULL_WRITE_OPS = [
 // named constants (rather than repeated per-agent) so a platform tool-name correction (see the
 // header's "Also unconfirmed" note) is a one-place edit, same as READ_OPS/FULL_WRITE_OPS above.
 const READ_BUILTINS = ['view_file', 'grep_search', 'find_by_name', 'list_dir', 'Read', 'Grep', 'Glob'];
-const RW_BUILTINS = [...READ_BUILTINS, 'write_to_file', 'replace_file_content', 'Write'];
+const RW_BUILTINS = [...READ_BUILTINS, 'write_to_file', 'replace_file_content', 'Write', 'Edit'];
 
 const AGENT_SCOPE = {
   intake: { builtins: RW_BUILTINS, ops: READ_OPS },
@@ -83,7 +83,10 @@ function unwrap(v) {
 }
 
 function extractRole(payload) {
-  return payload.Role || payload.role || payload.args?.Role || payload.subagent_role || null;
+  const role = payload.Role || payload.role || payload.args?.Role || payload.subagent_role || null;
+  // Strings only: a non-string (e.g. `["verifier"]`) would otherwise coerce to a
+  // table key on lookup and govern the call under a role nobody declared.
+  return typeof role === 'string' ? role : null;
 }
 
 function extractToolName(payload) {
@@ -129,9 +132,14 @@ process.stdin.on('end', () => {
   } catch {
     return allow(); // unparseable — don't block unrelated work
   }
+  // `null` and scalars parse fine but have no fields — treat as unparseable. A
+  // crash here would hand Antigravity no decision at all, not a permissive one.
+  if (!payload || typeof payload !== 'object') return allow();
 
   const role = extractRole(payload);
-  const scope = role && AGENT_SCOPE[role];
+  // Own-property lookup only: a role like "constructor" would otherwise resolve
+  // to an inherited Object.prototype member and crash on scope.builtins.
+  const scope = role && Object.hasOwn(AGENT_SCOPE, role) ? AGENT_SCOPE[role] : null;
   if (!scope) return allow(); // orchestrator, or an agent this hook doesn't govern
 
   const toolName = extractToolName(payload);
