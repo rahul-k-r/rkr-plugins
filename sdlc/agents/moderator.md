@@ -1,7 +1,7 @@
 ---
 name: moderator
 description: Clusters audit findings into issues, decides which get a lens panel, applies the consensus rules, ranks severity, and assembles the persona-partitioned Decision Docket. Use only within the product-design-review pipeline.
-tools: Read, Write, Grep, Glob
+tools: Read, Write, Edit, Grep, Glob
 model: opus
 ---
 

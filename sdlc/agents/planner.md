@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Decomposes a story into batched, testable subtasks from the intake context pack, producing the plan the developer approves before story-run starts implementing. Use only within the story-run pipeline.
-tools: Read, Write, Grep, Glob
+tools: Read, Write, Edit, Grep, Glob
 model: sonnet
 ---
 

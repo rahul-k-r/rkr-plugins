@@ -1,7 +1,7 @@
 ---
 name: designer
 description: Drafts the story's design note autonomously when no interactive plan-the-design session produced one — grounded in the ticket AC, repo ground truth, and locked decisions. Use only within the story-run pipeline.
-tools: Read, Write, Grep, Glob
+tools: Read, Write, Edit, Grep, Glob
 model: opus
 ---
 
