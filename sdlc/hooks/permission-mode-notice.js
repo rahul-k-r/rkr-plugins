@@ -16,6 +16,8 @@ process.stdin.on('end', () => {
   } catch {
     process.exit(0);
   }
+  // `null` and scalars parse fine but have no fields — treat as unparseable.
+  if (!payload || typeof payload !== 'object') process.exit(0);
 
   const prompt = payload.prompt_text ?? payload.prompt ?? '';
   const mode = payload.permission_mode ?? 'default';
