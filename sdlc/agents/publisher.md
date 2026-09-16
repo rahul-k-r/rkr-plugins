@@ -1,6 +1,9 @@
 ---
 name: publisher
 description: Executes the human-approved publish manifest after a product-design-review — creates/updates tracker tickets, posts comments, applies exactly what was approved and nothing else. Use only within the product-design-review pipeline, after the bulk publish gate.
+# Deliberately carries no tool allowlist: it must reach a tracker MCP server whose
+# name isn't knowable here, and frontmatter has no wildcard across server names.
+# Scoped at runtime by hooks/guard-agent-tools.js — see internal/tracker-adapter/SKILL.md.
 model: haiku
 ---
 

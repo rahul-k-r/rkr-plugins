@@ -43,6 +43,19 @@ function branchModel(root) {
 const protectedBranch = (b, model) =>
   b === 'main' || b === 'master' || (model === 'sprint' && /^sprint\//.test(b));
 
+// git's grammar is `git [global-options] <subcommand> [args]`, so the subcommand
+// is the first token that is neither an option nor the separate value of one.
+// Modelling that is what makes detection correct in both directions:
+//   - `git -c user.name=x commit` and `git -C /abs/path push` are caught (a
+//     character class over the option's value can't cover a path or a key=value);
+//   - `git stash push` and `git log --grep commit` are NOT caught, because their
+//     first non-option token is `stash`/`log`, not the subcommand we're gating.
+const QUOTED_OR_BARE = String.raw`(?:"[^"]*"|'[^']*'|\S+)`;
+// Global options that take their value as a SEPARATE following token.
+const VALUE_OPT = String.raw`(?:-[cC]|--(?:git-dir|work-tree|namespace|attr-source|config-env|super-prefix))`;
+const GLOBAL_OPTS = String.raw`(?:${VALUE_OPT}\s+${QUOTED_OR_BARE}\s+|-{1,2}[\w-]+(?:=${QUOTED_OR_BARE})?\s+)*`;
+const gitSubcommand = (sub) => new RegExp(String.raw`\bgit\s+${GLOBAL_OPTS}${sub}\b`);
+
 // True only when `releaseCommitPaths` is configured AND every file staged for
 // this commit is in that list. Fails closed (false) on any missing config,
 // unreadable git state, or empty staging area — never widens the gate by
@@ -86,8 +99,8 @@ process.stdin.on('end', () => {
     process.exit(0); // unparseable payload — don't block unrelated work
   }
 
-  const isCommit = /\bgit\s+(?:[\w-]+\s+)*commit\b/.test(cmd);
-  const isPush = /\bgit\s+(?:[\w-]+\s+)*push\b/.test(cmd);
+  const isCommit = gitSubcommand('commit').test(cmd);
+  const isPush = gitSubcommand('push').test(cmd);
   const isPrCreate = /\bgh\s+pr\s+create\b/.test(cmd);
   if (!isCommit && !isPush && !isPrCreate) process.exit(0);
 

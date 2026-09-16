@@ -1,6 +1,9 @@
 ---
 name: surveyor
 description: Ingests one slice of the product corpus (an epic + its stories + matching spec/TDD sections) and produces a digest plus traceability rows. Use only within the product-design-review pipeline.
+# Deliberately carries no tool allowlist: it must reach a tracker MCP server whose
+# name isn't knowable here, and frontmatter has no wildcard across server names.
+# Scoped at runtime by hooks/guard-agent-tools.js — see internal/tracker-adapter/SKILL.md.
 model: sonnet
 ---
 

@@ -1,6 +1,9 @@
 ---
 name: intake
 description: Assembles a read-only context pack for a story already fetched and branched by /sdlc:story-run — verifies referenced design notes, decisions, and ADRs actually resolve, and surfaces likely-touched files. Use only within the story-run pipeline.
+# Deliberately carries no tool allowlist: it must reach a tracker MCP server whose
+# name isn't knowable here, and frontmatter has no wildcard across server names.
+# Scoped at runtime by hooks/guard-agent-tools.js — see internal/tracker-adapter/SKILL.md.
 model: sonnet
 ---
 

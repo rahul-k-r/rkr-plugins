@@ -1,7 +1,7 @@
 ---
 name: cartographer
 description: Merges surveyor slice digests into the product traceability matrix and the canonical flow inventory; flags matrix orphans mechanically. Use only within the product-design-review pipeline.
-tools: Read, Write, Grep, Glob
+tools: Read, Write, Edit, Grep, Glob
 model: opus
 ---
 
