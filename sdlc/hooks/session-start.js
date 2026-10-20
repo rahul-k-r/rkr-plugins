@@ -56,7 +56,7 @@ process.stdin.on('end', () => {
         const q = (s.escalations || []).filter((e) => e && !e.decision).pop();
         lines.push(
           `- ${s.story_key}: PAUSED on an escalation${q ? ` ("${q.question}")` : ''} — ` +
-            `run /sdlc:story-run ${s.story_key} --resume to answer and continue.`
+            `read docs/stories/${key}/handoff.md, then run /sdlc:story-run ${s.story_key} --resume to answer and continue.`
         );
       } else {
         lines.push(
