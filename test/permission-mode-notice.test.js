@@ -10,7 +10,7 @@ const noticeFor = (r) => {
   return JSON.parse(r.stdout).hookSpecificOutput;
 };
 
-const RUN_COMMANDS = ['story-run', 'design-run', 'review-run'];
+const RUN_COMMANDS = ['story-run', 'design-run', 'review-run', 'batch-run'];
 
 describe('when the notice fires', () => {
   test('a run command in a prompting mode gets the notice', () => {

@@ -14,7 +14,8 @@ const oneLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
 
 // What a fresh chat should run for each phase — mirrors story-run.md's Resume semantics.
 function nextAction(s, key, pendingDecisions) {
-  const resume = `/sdlc:story-run ${key} --resume`;
+  // A batch member must be resumed through its orchestrator, which owns relaying and sequencing.
+  const resume = s.batch && s.batch.id ? '/sdlc:batch-run --resume' : `/sdlc:story-run ${key} --resume`;
   if (s.phase === 'CLOSED') return 'Nothing — the story is closed.';
   if (s.phase === 'PUBLISHED') return 'Nothing — the design run is published.';
   if (pendingDecisions) return `Answer the decision(s) above in the fresh chat, then run \`${resume}\` — it records each answer and continues.`;
@@ -123,6 +124,72 @@ function render(s, key, dir) {
   return out.join('\n');
 }
 
+// Rollup for batch-run: one table over every story's own handoff, so a fresh
+// chat triages the whole batch from one file.
+function renderBatch(b, storiesDir) {
+  const rows = list(b.stories).map((st) => {
+    let s = null;
+    try {
+      s = JSON.parse(fs.readFileSync(path.join(storiesDir, st.key, 'story-state.json'), 'utf8'));
+    } catch {
+      /* not started yet, or unreadable — fall back to the batch's own record */
+    }
+    const open = s ? list(s.escalations).filter((e) => !e.decision).length + (s.checkpoint && s.checkpoint.pending_question ? 1 : 0) : 0;
+    return { st, s, open };
+  });
+  const needing = rows.filter((r) => r.open > 0 || r.st.status === 'PAUSED');
+  const blocked = rows.filter((r) => r.st.status === 'BLOCKED' || r.st.status === 'FAILED');
+  const bypass = list(b.flags && b.flags.passthrough).includes('--bypass');
+  const finalStatuses = bypass ? ['CLOSED', 'FAILED', 'BLOCKED'] : ['CLOSED', 'PR_OPENED', 'READY_FOR_PR', 'FAILED', 'BLOCKED'];
+  const settled = rows.every((r) => finalStatuses.includes(r.st.status));
+  const waiting = rows.filter((r) => r.st.status === 'WAITING');
+  const status = needing.length
+    ? 'NEEDS_DECISION'
+    : blocked.length || (settled === false && b.phase === 'DONE')
+      ? 'NEEDS_ACTION'
+      : settled && b.phase === 'DONE'
+        ? 'DONE'
+        : 'RUNNING';
+  const cell = (v) => oneLine(v).replace(/\|/g, '/');
+  const prCell = (p) => (p && (p.url || (p.number ? `#${p.number}` : ''))) || (typeof p === 'string' ? p : '');
+
+  const out = [`# Batch handoff — ${b.batch_id}`, ''];
+  out.push(`**Status:** ${status} · **Phase:** ${b.phase || '?'} · **Generated:** ${new Date().toISOString()}`, '');
+  out.push('_Auto-generated from `batch-state.json` and each story\'s `story-state.json` — do not edit. Per-story detail is in each story\'s `handoff.md`._', '');
+  out.push('| Story | Status | Phase | PR | Open decisions | Waiting on |', '|---|---|---|---|---|---|');
+  for (const { st, s, open } of rows) {
+    const deps = list(b.edges).filter((e) => e.to === st.key && e.type !== 'none').map((e) => `${e.from} (${e.type})`);
+    out.push(
+      `| ${st.key} | ${st.status} | ${(s && s.phase) || st.phase || '—'} | ${prCell(s && s.pr) || prCell(st.pr) || '—'} | ${open} | ${cell(st.blocked_by || deps.join(', ')) || '—'} |`
+    );
+  }
+  out.push('');
+  if (needing.length) {
+    out.push('## Decisions needed', ...needing.map((r) => `- ${r.st.key}: see \`docs/stories/${r.st.key}/handoff.md\``), '');
+  }
+  if (blocked.length) {
+    out.push('## Blocked or failed', ...blocked.map((r) => `- ${r.st.key} (${r.st.status})${r.st.blocked_by ? `: ${oneLine(r.st.blocked_by)}` : ''}`), '');
+  }
+  if (waiting.length && b.phase === 'DONE') {
+    out.push('## Waiting on a merge you owe', ...waiting.map((r) => `- ${r.st.key}: waits for ${list(b.edges).filter((e) => e.to === r.st.key).map((e) => e.from).join(', ') || 'a predecessor'} to be merged`), '');
+  }
+  const commentsPosted = Object.values((b.comments && b.comments.tickets) || {}).some((t) => t && t.posted_at);
+  out.push('## Next action');
+  out.push(
+    needing.length
+      ? 'Answer the decisions above, then `/sdlc:batch-run --resume`.'
+      : waiting.length && b.phase === 'DONE'
+        ? 'Merge the PRs listed above, then `/sdlc:batch-run --resume` to run the waiting stories.'
+        : status === 'DONE'
+          ? b.flags && b.flags.comment
+            ? commentsPosted ? 'Nothing — the batch is complete and the cross-ticket comments are posted.' : '`/sdlc:batch-run --resume` — the cross-ticket comments are still to post.'
+            : 'Review the PRs; cross-ticket comments are drafted in `comments-draft.md` (not posted).'
+          : '`/sdlc:batch-run --resume` to continue.'
+  );
+  out.push('');
+  return out.join('\n');
+}
+
 let input = '';
 process.stdin.on('data', (d) => (input += d));
 process.stdin.on('end', () => {
@@ -130,6 +197,14 @@ process.stdin.on('end', () => {
     const payload = JSON.parse(input);
     const filePath = (payload.tool_input && payload.tool_input.file_path) || '';
     const norm = filePath.replace(/\\/g, '/');
+    if (/\/docs\/stories\/_batch\/[^/]+\/batch-state\.json$/.test(norm)) {
+      if (!fs.existsSync(filePath)) process.exit(0);
+      const b = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (!b || typeof b !== 'object' || !b.batch_id) process.exit(0);
+      const storiesDir = path.resolve(path.dirname(filePath), '..', '..');
+      fs.writeFileSync(path.join(path.dirname(filePath), 'batch-handoff.md'), renderBatch(b, storiesDir));
+      process.exit(0);
+    }
     const m = norm.match(/\/docs\/stories\/([^/]+)\/story-state\.json$/);
     if (!m || !fs.existsSync(filePath)) process.exit(0);
     const s = JSON.parse(fs.readFileSync(filePath, 'utf8'));

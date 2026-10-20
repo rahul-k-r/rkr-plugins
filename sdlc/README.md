@@ -92,6 +92,9 @@ All commands are callable as `/sdlc:<command>`:
 - **`/sdlc:close-story <KEY> [flags]`**:
   Post-merge completion: confirms merge and CI, posts completion record to tracker, transitions issue to *Done*, and reports unblocked dependency tickets.
 
+- **`/sdlc:batch-run <KEY>... [--parallel N] [--comment] [flags]`**:
+  Sequences several stories by real dependencies (contract, shared pattern/family, file overlap), runs independent ones in parallel worktrees as `story-run` subagents, and optionally posts cross-ticket comments at the end (`--comment`). All `story-run` flags pass through.
+
 ### 2. Design & Architecture
 - **`/sdlc:design-run [<KEY>] [flags]`**:
   Autonomous multi-expert design deliberation: frames candidate design issues, debates each through a multi-perspective lens panel, synthesizes decisions, drafts `docs/design-notes/<KEY>.md`, and adversarially reviews it.

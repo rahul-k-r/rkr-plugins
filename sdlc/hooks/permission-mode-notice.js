@@ -3,7 +3,7 @@
 // is invoked without an auto-accept permission mode, tell the user up front
 // that the run will pause for approval on every edit/command — and how to
 // switch. Silent on every other prompt; never blocks.
-const RUN_COMMAND = /^\s*\/sdlc:(story-run|design-run|review-run)\b/;
+const RUN_COMMAND = /^\s*\/sdlc:(story-run|design-run|review-run|batch-run)\b/;
 // Modes that don't prompt per tool call; anything else gets the notice.
 const AUTO_MODES = new Set(['acceptEdits', 'bypassPermissions', 'auto', 'dontAsk']);
 

@@ -32,6 +32,17 @@ process.stdin.on('end', () => {
   const storiesDir = path.join(root, 'docs', 'stories');
   const lines = [];
   try {
+    const batchRoot = path.join(storiesDir, '_batch');
+    for (const id of fs.existsSync(batchRoot) ? fs.readdirSync(batchRoot) : []) {
+      try {
+        const b = JSON.parse(fs.readFileSync(path.join(batchRoot, id, 'batch-state.json'), 'utf8'));
+        if (b && b.phase && b.phase !== 'DONE') {
+          lines.push(`- batch ${b.batch_id || id}: in flight (phase ${b.phase}) — read docs/stories/_batch/${id}/batch-handoff.md, then /sdlc:batch-run --resume.`);
+        }
+      } catch {
+        /* unreadable batch state — skip */
+      }
+    }
     for (const key of fs.readdirSync(storiesDir)) {
       const p = path.join(storiesDir, key, 'story-state.json');
       if (!fs.existsSync(p)) continue;
@@ -52,16 +63,18 @@ process.stdin.on('end', () => {
         continue;
       }
       if (DONE.has(s.phase)) continue;
+      // A batch member is resumed through its orchestrator, never on its own.
+      const resumeCmd = s.batch && s.batch.id ? '/sdlc:batch-run --resume' : `/sdlc:story-run ${s.story_key} --resume`;
       if (s.phase === 'PAUSED') {
         const q = (s.escalations || []).filter((e) => e && !e.decision).pop();
         lines.push(
           `- ${s.story_key}: PAUSED on an escalation${q ? ` ("${q.question}")` : ''} — ` +
-            `read docs/stories/${key}/handoff.md, then run /sdlc:story-run ${s.story_key} --resume to answer and continue.`
+            `read docs/stories/${key}/handoff.md, then run ${resumeCmd} to answer and continue.`
         );
       } else {
         lines.push(
           `- ${s.story_key}: in flight (phase ${s.phase}, branch ${s.branch}) — ` +
-            `resume with /sdlc:story-run ${s.story_key} --resume.`
+            `resume with ${resumeCmd}.`
         );
       }
     }

@@ -87,6 +87,12 @@ describe('next action', () => {
   test('a mid-flight phase resumes by key', () => {
     assert.match(handoff({ phase: 'IMPLEMENT' }), /\/sdlc:story-run ABC-1 --resume/);
   });
+
+  test('a batch member resumes through its orchestrator, not on its own', () => {
+    const md = handoff({ phase: 'IMPLEMENT', batch: { id: 'batch-1', lane: 1 } });
+    assert.match(md, /\/sdlc:batch-run --resume/);
+    assert.doesNotMatch(md, /\/sdlc:story-run ABC-1 --resume/);
+  });
 });
 
 describe('content', () => {
@@ -124,6 +130,73 @@ describe('content', () => {
     const md = fs.readFileSync(path.join(path.dirname(file), 'handoff.md'), 'utf8');
     assert.strictEqual(status(md), 'DONE');
     assert.doesNotMatch(md, /Q\?/);
+  });
+});
+
+describe('batch rollup', () => {
+  function batch(b, stories = {}) {
+    const repo = makeRepo();
+    repos.push(repo);
+    for (const [key, st] of Object.entries(stories)) writeStoryState(repo, key, { story_key: key, branch: 'b', ...st });
+    const dir = path.join(repo, 'docs', 'stories', '_batch', 'batch-1');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, 'batch-state.json');
+    fs.writeFileSync(file, JSON.stringify({ batch_id: 'batch-1', ...b }));
+    assert.strictEqual(runHook(WRITE, { tool_input: { file_path: file } }).status, 0);
+    return fs.readFileSync(path.join(dir, 'batch-handoff.md'), 'utf8');
+  }
+
+  test('tabulates every story and flags the ones awaiting a decision', () => {
+    const md = batch(
+      { phase: 'EXECUTE', stories: [{ key: 'A-1', status: 'PAUSED' }, { key: 'A-2', status: 'WAITING' }], edges: [{ from: 'A-1', to: 'A-2', type: 'needs-code' }] },
+      { 'A-1': { phase: 'PAUSED', escalations: [{ question: 'Q?', decision: null }] } }
+    );
+    assert.match(md, /\*\*Status:\*\* NEEDS_DECISION/);
+    assert.match(md, /\| A-1 \| PAUSED \| PAUSED \| — \| 1 \|/);
+    assert.match(md, /\| A-2 \| WAITING .* A-1 \(needs-code\) \|/);
+    assert.match(md, /batch-run --resume/);
+  });
+
+  test('a fully settled batch is DONE; blocked stories make it NEEDS_ACTION', () => {
+    const done = batch({ phase: 'DONE', stories: [{ key: 'A-1', status: 'CLOSED' }] }, { 'A-1': { phase: 'CLOSED' } });
+    assert.match(done, /\*\*Status:\*\* DONE/);
+    const blocked = batch({ phase: 'EXECUTE', stories: [{ key: 'A-1', status: 'FAILED' }, { key: 'A-2', status: 'BLOCKED', blocked_by: 'A-1 failed' }] });
+    assert.match(blocked, /\*\*Status:\*\* NEEDS_ACTION/);
+    assert.match(blocked, /A-2 \(BLOCKED\): A-1 failed/);
+  });
+
+  test('PR_OPENED is not settled under --bypass, and DONE needs the batch itself to be DONE', () => {
+    const stories = [{ key: 'A-1', status: 'PR_OPENED' }];
+    assert.match(batch({ phase: 'DONE', flags: { passthrough: ['--bypass'] }, stories }), /\*\*Status:\*\* NEEDS_ACTION/);
+    assert.match(batch({ phase: 'EXECUTE', stories }), /\*\*Status:\*\* RUNNING/);
+    assert.match(batch({ phase: 'DONE', stories }), /\*\*Status:\*\* DONE/);
+  });
+
+  test('object PRs, multiline and pipe-bearing cells render as one clean row', () => {
+    const md = batch({
+      phase: 'EXECUTE',
+      stories: [{ key: 'A-1', status: 'BLOCKED', pr: { number: 5, url: null }, blocked_by: 'A-0 failed\nfoo | bar' }],
+    });
+    assert.doesNotMatch(md, /\[object Object\]/);
+    assert.match(md, /\| A-1 \| BLOCKED \| — \| #5 \| 0 \| A-0 failed foo \/ bar \|/);
+  });
+
+  test('stories waiting on a merge are called out once the batch has stopped', () => {
+    const md = batch({
+      phase: 'DONE',
+      edges: [{ from: 'A-1', to: 'A-2', type: 'needs-code' }],
+      stories: [{ key: 'A-1', status: 'PR_OPENED' }, { key: 'A-2', status: 'WAITING' }],
+    });
+    assert.match(md, /\*\*Status:\*\* NEEDS_ACTION/);
+    assert.match(md, /A-2: waits for A-1 to be merged/);
+    assert.match(md, /Merge the PRs/);
+  });
+
+  test('next action tracks whether --comment was passed and posted', () => {
+    const base = { phase: 'DONE', stories: [{ key: 'A-1', status: 'CLOSED' }] };
+    assert.match(batch({ ...base, flags: { comment: true } }), /still to post/);
+    assert.match(batch({ ...base, flags: { comment: true }, comments: { tickets: { 'A-1': { posted_at: 'x' } } } }), /comments are posted/);
+    assert.match(batch(base), /comments-draft\.md/);
   });
 });
 
