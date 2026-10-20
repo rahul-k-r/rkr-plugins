@@ -32,6 +32,7 @@ Appended once per subagent dispatch, always, to the run's own working-state file
 | `mode` | no | free-text context when one agent has more than one dispatch shape (e.g. designer's `framing` vs `drafting`) |
 | `model` | yes | the color/grouping role for this dispatch — `opus`, `sonnet`, or `haiku` when it matches the command's own "Model tiering" table for that agent; `other` when the dispatch was given an explicit `model` override outside that set (e.g. to Fable) |
 | `model_version` | yes | the **specific** model version actually running for this dispatch — e.g. `"Opus 4.8"`, `"Sonnet 5"`, `"Haiku 4.5"`, or whatever the override resolves to (e.g. `"Fable 5"`). See "Recording `model_version`" below — this is not something the dispatch's tool result returns, so record it at dispatch time from what the orchestrating session already knows. |
+| `thinking_effort` | no | the `effort` parameter the dispatch ran with (`low`/`medium`/`high`/`xhigh`/`max`), or omitted when the tier's cell was `inherit` — lets a run's stats show whether a cheaper tier actually cost retries (`internal/model-effort/SKILL.md`) |
 | `attempt` | no | retry/attempt number when the dispatch is part of a batch's retry loop; omit (implicitly 1) otherwise |
 | `duration_ms` | yes | wall-clock duration of the dispatch, from the tool result |
 | `tokens` | yes | token usage reported for the dispatch |

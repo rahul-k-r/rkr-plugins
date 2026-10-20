@@ -115,7 +115,7 @@ describe('phase legality', () => {
 describe('revision budgets', () => {
   const budgeted = (budgets) => check({ ...valid, budgets });
 
-  for (const k of ['frame_revisions', 'design_revisions', 'plan_revisions', 'replans']) {
+  for (const k of ['frame_revisions', 'design_revisions', 'plan_revisions', 'delta_reviews', 'replans']) {
     test(`${k}_used over max_${k} is rejected`, () => {
       const r = budgeted({ [`${k}_used`]: 3, [`max_${k}`]: 2 });
       assert.strictEqual(r.status, INVALID);

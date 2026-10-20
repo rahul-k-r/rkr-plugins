@@ -43,6 +43,15 @@ argument-hint: "(no arguments)"
    ```
 
    Not asked here — advanced, opt-in fields a developer adds by hand later:
+   - `"reviewEvery": 3` and `"reviewPaths": ["**/migrations/**", ...]` — how `story-run` reviews
+     batches: the validator runs after every batch, the reviewer only when a batch touches a
+     `reviewPaths` glob, the coder flags uncertainty, a retry happens, or `reviewEvery` batches have
+     passed unreviewed (then one cumulative review). `reviewEvery: 1` reviews every batch. See
+     `commands/story-run.md` Step 5b.
+   - Under `effort: medium` (and `low`), also consider setting the session advisor — `/advisor opus`
+     or `"advisorModel": "opus"` in your own settings — so the cheaper `coder`/`planner`/`reviewer` can
+     consult Opus at decision points. The plugin can't set it for you and works without it
+     (`internal/model-effort/SKILL.md`, *Advisor*).
    - `"releaseCommitPaths": ["CHANGELOG.md", "path/to/Version.file"]` — if the repo has a
      documented release-commit convention (e.g. a changelog rename + version bump, landed directly
      on a protected branch with no PR). See `hooks/gate-git.js`'s top comment for exactly what it does.

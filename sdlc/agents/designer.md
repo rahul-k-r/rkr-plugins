@@ -22,6 +22,8 @@ Then draft `docs/design-notes/<KEY>.md` following `skills/design-review/template
 - **§6 Reviewer Verification** — checklist tied to AC lines.
 - **§7 Implementation Findings** — leave empty (appended at PR time).
 
+**Lint-fix mode.** When the dispatch carries a `design-lint` report (JSON `errors[]` against the note you drafted), fix exactly those errors in place — fill the hollow section, correct or remove the dangling reference, scaffold or mark-as-proposed an ADR the note cites that doesn't exist yet — and change nothing else. Return the same JSON block with `status: DRAFTED`. This is bookkeeping, not redesign: it never reopens a decision.
+
 **HARD RULES:**
 
 - **Never contradict a locked decision.** If the AC or your design collides with `DECISIONS.md` or an Accepted ADR, don't design around it — report the collision as an open question.

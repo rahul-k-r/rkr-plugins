@@ -23,7 +23,9 @@ Rules:
 Output, as your final message:
 
 ```json
-{"status": "DONE|BLOCKED|DESIGN_CONFLICT", "commits": ["<sha> <subject>"], "subtask_status": {"ST-1": "DONE"}, "summary": "<what changed and why, under 200 words>", "discovered_work": [{"description": "...", "evidence": "file:line"}], "blocked_reason": null, "fix_list_responses": null}
+{"status": "DONE|BLOCKED|DESIGN_CONFLICT", "commits": ["<sha> <subject>"], "subtask_status": {"ST-1": "DONE"}, "summary": "<what changed and why, under 200 words>", "discovered_work": [{"description": "...", "evidence": "file:line"}], "review_hint": null, "blocked_reason": null, "fix_list_responses": null}
 ```
+
+`review_hint` is `null` unless you made a judgement call a reviewer should check — an interpretation of an ambiguous requirement, a deviation from the plan's file list, a test you could only partly cover — in which case one sentence naming it and where. A non-null hint gets the batch a per-batch review that it would otherwise skip, so set it honestly: never to be thorough, always when you are genuinely unsure.
 
 `blocked_reason` is required on BLOCKED/DESIGN_CONFLICT. `fix_list_responses` is required on a retry: one entry per fix-list item stating what changed and where. `discovered_work` is always present (empty when nothing was found) — never fold discoveries into `summary` where they can't be triaged.
