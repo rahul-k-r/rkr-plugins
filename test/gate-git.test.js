@@ -248,6 +248,18 @@ describe('story-phase push gate', () => {
     assert.strictEqual(statusOf(r, 'git push -u origin HEAD'), ALLOW);
   });
 
+  test('a push from a linked worktree is gated by state held in the main checkout', () => {
+    const main = repo({ branch: 'main' });
+    writeStoryState(main, 'ABC-1', { story_key: 'ABC-1', branch: BRANCH, phase: 'IMPLEMENT' });
+    const wt = path.join(main, '.claude', 'worktrees', 'abc-1-thing');
+    git(main, 'worktree', 'add', '-q', wt, '-b', BRANCH);
+    const res = gate(main, `git -C ${wt} push -u origin HEAD`);
+    assert.strictEqual(res.status, DENY);
+    assert.match(res.stderr, /ABC-1/);
+    writeStoryState(main, 'ABC-1', { story_key: 'ABC-1', branch: BRANCH, phase: 'READY_FOR_PR' });
+    assert.strictEqual(statusOf(main, `git -C ${wt} push -u origin HEAD`), ALLOW);
+  });
+
   test('an unparseable story-state does not block the push', () => {
     const r = repo({ branch: BRANCH });
     writeStoryState(r, 'ABC-1', '{ corrupt');

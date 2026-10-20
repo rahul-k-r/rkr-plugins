@@ -127,9 +127,24 @@ process.stdin.on('end', () => {
     process.exit(0); // not a git repo — not ours to gate
   }
 
-  const workflowRepo =
-    fs.existsSync(path.join(root, 'docs', 'stories')) ||
-    fs.existsSync(path.join(root, 'docs', 'design-notes'));
+  // Story state is gitignored, so a linked worktree never has it: it lives in
+  // the main checkout (the common git dir's parent). Consider both roots.
+  const roots = [root];
+  try {
+    const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    const mainRoot = path.dirname(common);
+    if (path.resolve(mainRoot) !== path.resolve(root)) roots.push(mainRoot);
+  } catch {
+    /* old git without --path-format: the worktree's own root only */
+  }
+
+  const workflowRepo = roots.some(
+    (r) => fs.existsSync(path.join(r, 'docs', 'stories')) || fs.existsSync(path.join(r, 'docs', 'design-notes'))
+  );
   if (!workflowRepo) process.exit(0);
 
   const model = branchModel(root);
@@ -167,20 +182,27 @@ process.stdin.on('end', () => {
   }
 
   if (isPush || isPrCreate) {
-    const storiesDir = path.join(root, 'docs', 'stories');
     let state = null;
-    try {
-      for (const key of fs.readdirSync(storiesDir)) {
-        const p = path.join(storiesDir, key, 'story-state.json');
-        if (!fs.existsSync(p)) continue;
-        const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-        if (s && s.branch === branch) {
-          state = s;
-          break;
+    for (const r of roots) {
+      let keys;
+      try {
+        keys = fs.readdirSync(path.join(r, 'docs', 'stories'));
+      } catch {
+        continue; // no docs/stories here
+      }
+      for (const key of keys) {
+        const p = path.join(r, 'docs', 'stories', key, 'story-state.json');
+        try {
+          const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (s && s.branch === branch) {
+            state = s;
+            break;
+          }
+        } catch {
+          /* missing or unparseable — skip */
         }
       }
-    } catch {
-      process.exit(0); // no docs/stories — nothing story-run manages here
+      if (state) break;
     }
 
     const PUSH_OK = new Set(['READY_FOR_PR', 'PR_OPENED', 'AUTO_FIX']);
