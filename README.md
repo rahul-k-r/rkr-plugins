@@ -10,7 +10,7 @@ This repository serves as a plugin marketplace and workspace source. All plugins
 
 | Plugin | Version | Description | Platforms |
 |---|---|---|---|
-| **[`sdlc`](./sdlc/)** | `0.8.0` | Comprehensive story SDLC: design-review gate, full autonomous story lifecycle (`story-run`), batched multi-story orchestration (`batch-run`), multi-expert design deliberation (`design-run`), multi-PR review subsystem (`review-run`), and product design review (`product-design-review`). | Claude Code, Codex, Antigravity |
+| **[`sdlc`](./sdlc/)** | `0.8.1` | Comprehensive story SDLC: design-review gate, full autonomous story lifecycle (`story-run`), batched multi-story orchestration (`batch-run`), multi-expert design deliberation (`design-run`), multi-PR review subsystem (`review-run`), and product design review (`product-design-review`). | Claude Code, Codex, Antigravity |
 
 ---
 
