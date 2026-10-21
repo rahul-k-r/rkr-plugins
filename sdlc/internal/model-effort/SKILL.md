@@ -25,9 +25,11 @@ Every Task dispatch, for every agent, passes:
 - the **`effort`** parameter from the *Thinking effort* table, **unless** the cell is `inherit` (then omit it and the session/agent default applies);
 - the **advisor line** from the *Advisor* section, appended to the dispatch prompt, for the agents it lists.
 
-**The retry ladder (`coder`).** The first attempt at a batch uses the table's `coder` model; every **retry** of that batch (RETRY verdict, 5g), every FINAL_REVIEW fix dispatch, and every `review-fix` coder dispatch uses the `coder (retry)` model and the retry thinking effort instead. A cheap first attempt costs one extra cycle when it fails; it never changes what the validator and reviewer accept.
+**The retry ladder (`coder`).** The first attempt at a batch uses the table's `coder` model; every **retry** of that batch (RETRY verdict, 5g), every FINAL_REVIEW fix dispatch, and every `review-fix` coder dispatch uses the `coder (retry)` model and the retry thinking effort instead. A coder re-dispatched after a mid-batch death keeps the model of the attempt that died (the attempt number didn't advance). A cheap first attempt costs one extra cycle when it fails; it never changes what the validator and reviewer accept.
 
-Claude Code rules this relies on: the Agent tool's `effort` parameter overrides the agent's frontmatter `effort`, which overrides the session level, and `CLAUDE_CODE_EFFORT_LEVEL` (an environment variable) overrides all three — if it is set, thinking effort is flattened to that value and only the model axis tiers. A model that doesn't support a level runs at the highest supported level at or below it. The per-dispatch parameter needs Claude Code 2.1.292+ and applies to non-fork subagents only.
+The tier also sets the default **review cadence** (`story-run` Step 5b `reviewEvery`: `1` at High/Extra High, `2` at Medium, `3` at Low/Very Low) — a cheaper first-attempt coder gets reviewed more often, not less.
+
+Claude Code rules this relies on: the Agent tool's `effort` parameter overrides the agent's frontmatter `effort`, which overrides the session level, and `CLAUDE_CODE_EFFORT_LEVEL` (an environment variable) overrides all three — if it is set, thinking effort is flattened to that value and only the model axis tiers. A model that doesn't support a level runs at the highest supported level at or below it (Claude Code's [model configuration docs](https://code.claude.com/docs/en/model-config#effort-levels)). The per-dispatch parameter needs Claude Code 2.1.292+ and applies to non-fork subagents only; on an older Claude Code, omit it and only the model axis tiers.
 
 ## Models
 
@@ -65,7 +67,7 @@ Organized by each agent's High-tier (frontmatter) default — the stable referen
 
 ## Thinking effort
 
-Claude Code's per-agent reasoning level, passed as the Agent tool's `effort` parameter. `inherit` = omit the parameter (the session/agent default applies — this is what keeps High byte-for-byte unchanged).
+Claude Code's per-agent reasoning level, passed as the Agent tool's `effort` parameter. `inherit` = omit the parameter (the session/agent default applies — which is what leaves High unchanged, apart from `validator`/`publisher`, pinned to `low` at every tier).
 
 | Agent | Very Low | Low | Medium | High (default) | Extra High |
 |---|---|---|---|---|---|
@@ -90,7 +92,7 @@ Claude Code's [advisor tool](https://code.claude.com/docs/en/advisor) lets a che
 |---|---|---|---|---|
 | off | opus | opus | off | off |
 
-**Advisor line** the orchestrator appends to the dispatch prompt (the advisor decides when to call; this steers *which* moments, and caps the cost — each consult re-reads the whole transcript uncached at the advisor's rates):
+**Advisor line** the orchestrator appends to the dispatch prompt. The advisor decides when to call and there is no setting to cap or gate calls — the line only *steers* which moments an executor consults, and asks it to ration itself; each consult re-reads the whole transcript uncached at the advisor's rates, so treat the cost as real. The orchestrating session inherits the advisor too: its instructions (`story-run`, `design-run`, `batch-run`) say to consult it only at an escalation decision, never routinely.
 
 | Agent | Tiers | Line |
 |---|---|---|

@@ -47,7 +47,7 @@ process.stdin.on('end', () => {
   // raises the max). See design-run.md "Revision budgets".
   const b = s.budgets;
   if (b && typeof b === 'object') {
-    for (const k of ['frame_revisions', 'design_revisions', 'plan_revisions', 'delta_reviews', 'replans']) {
+    for (const k of ['frame_revisions', 'design_revisions', 'plan_revisions', 'replans']) {
       const used = b[`${k}_used`];
       const max = b[`max_${k}`];
       if (typeof used === 'number' && typeof max === 'number' && used > max) {

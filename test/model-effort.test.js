@@ -92,3 +92,76 @@ describe('Thinking effort table', () => {
     }
   });
 });
+
+// The Codex and Antigravity ports tier the same agents with their own vocabularies; they must
+// stay in step with the Claude table (a row per agent, a retry row, no weaker retry, High flat).
+function portTable(file, heading = 'The table') {
+  const src = read(path.join(ROOT, 'sdlc', 'internal', file));
+  const m = src.match(new RegExp(`^## ${heading}\\s*$([\\s\\S]*?)(?=^## |^\\*\\*The retry ladder|$(?![\\s\\S]))`, 'm'));
+  assert.ok(m, `${file}: section "${heading}" not found`);
+  const rows = m[1]
+    .split('\n')
+    .filter((l) => /^\|/.test(l) && !/^\|[\s-|]+\|$/.test(l))
+    .slice(1)
+    .map((l) => l.split('|').slice(1, -1).map((c) => c.replace(/`/g, '').trim()));
+  return Object.fromEntries(rows.map(([a, ...cells]) => [a, cells]));
+}
+// Port tables list High first, then Very Low … Extra High; reorder to the Claude table's order.
+const inTierOrder = (cells) => [cells[1], cells[2], cells[3], cells[0], cells[4]];
+
+describe('Codex model-effort table', () => {
+  const rows = portTable('codex-model-effort.md');
+  const SLOT = { economy: 0, balanced: 1, workhorse: 2, flagship: 3 };
+  const REASON = { low: 0, medium: 1, high: 2, xhigh: 3 };
+  const parse = (c) => {
+    const [slot, reasoning] = c.split('/').map((s) => s.trim());
+    assert.ok(slot in SLOT && reasoning in REASON, `bad Codex cell "${c}"`);
+    return { slot: SLOT[slot], reasoning: REASON[reasoning] };
+  };
+
+  test('every agent has a row, plus the retry row', () => {
+    for (const { name } of agents) assert.ok(rows[name], `no Codex row for "${name}"`);
+    assert.ok(rows['coder (retry)']);
+  });
+
+  test('retry is never weaker than the first attempt, and High does not escalate', () => {
+    const first = inTierOrder(rows.coder).map(parse);
+    const retry = inTierOrder(rows['coder (retry)']).map(parse);
+    retry.forEach((r, i) => assert.ok(r.slot >= first[i].slot && r.reasoning >= first[i].reasoning, `tier #${i}: retry weaker`));
+    assert.deepStrictEqual(retry[3], first[3]);
+  });
+
+  test('adjacent tiers change at most one axis (model slot or reasoning), per the file\'s own rule', () => {
+    for (const [name, cells] of Object.entries(rows)) {
+      const t = inTierOrder(cells).map(parse);
+      for (let i = 1; i < t.length; i++) {
+        const axes = Number(t[i].slot !== t[i - 1].slot) + Number(t[i].reasoning !== t[i - 1].reasoning);
+        assert.ok(axes <= 1, `${name}: tier #${i - 1}→#${i} changes both model slot and reasoning`);
+      }
+    }
+  });
+});
+
+describe('Antigravity model-effort table', () => {
+  const rows = portTable('gemini-model-effort/SKILL.md');
+  const RANK = { flash_lite: 0, flash: 1, pro: 2 };
+
+  test('every agent has a row, plus the retry row, with valid models', () => {
+    for (const { name } of agents) assert.ok(rows[name], `no Antigravity row for "${name}"`);
+    assert.ok(rows['coder (retry)']);
+    for (const [a, cells] of Object.entries(rows)) for (const c of cells) assert.ok(c in RANK, `${a}: "${c}" is not a known model`);
+  });
+
+  test('retry is never weaker than the first attempt, and High does not escalate', () => {
+    const first = inTierOrder(rows.coder);
+    const retry = inTierOrder(rows['coder (retry)']);
+    retry.forEach((r, i) => assert.ok(RANK[r] >= RANK[first[i]], `tier #${i}: retry weaker`));
+    assert.strictEqual(retry[3], first[3]);
+  });
+
+  test('the Medium swap matches the Claude table: designer up, coder starts cheaper', () => {
+    assert.strictEqual(rows.designer[3], 'pro');
+    assert.strictEqual(rows.coder[3], 'flash');
+    assert.strictEqual(rows['coder (retry)'][3], 'pro');
+  });
+});

@@ -29,9 +29,10 @@ a model-class jump with a reasoning-budget jump in one step.
 
 | Agent | High (default) | Very Low | Low | Medium | Extra High |
 |---|---|---|---|---|---|
-| `coder` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `workhorse` / `medium` | `flagship` / `high` |
+| `coder` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `balanced` / `high` | `flagship` / `high` |
+| `coder (retry)` | `workhorse` / `high` | `balanced` / `medium` | `workhorse` / `medium` | `workhorse` / `high` | `flagship` / `high` |
 | `architect` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `workhorse` / `medium` | `flagship` / `high` |
-| `designer` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `balanced` / `high` | `workhorse` / `xhigh` |
+| `designer` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `workhorse` / `medium` | `workhorse` / `xhigh` |
 | `panelist` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `balanced` / `high` | `workhorse` / `xhigh` |
 | `verifier` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `balanced` / `high` | `workhorse` / `xhigh` |
 | `moderator` | `workhorse` / `high` | `balanced` / `low` | `balanced` / `medium` | `balanced` / `high` | `workhorse` / `xhigh` |
@@ -44,6 +45,16 @@ a model-class jump with a reasoning-budget jump in one step.
 | `surveyor` | `balanced` / `high` | `economy` / `low` | `economy` / `medium` | `balanced` / `medium` | `balanced` / `xhigh` |
 | `validator` | `economy` / `low` | `economy` / `low` | `economy` / `low` | `economy` / `low` | `economy` / `low` |
 | `publisher` | `economy` / `low` | `economy` / `low` | `economy` / `low` | `economy` / `low` | `economy` / `low` |
+
+**The retry ladder.** `coder (retry)` is not an agent: it is the row used for
+every retry of a batch, every final-review fix dispatch, and every `review-fix`
+coder dispatch (a resumed dispatch after a mid-batch death keeps the row of the
+attempt that died). The first attempt starts cheaper than High at Low and
+Medium and escalates on failure; High and Extra High never escalate. This
+mirrors `internal/model-effort/SKILL.md`; the slots map to its models as
+`economy`≈haiku, `balanced`≈sonnet, `workhorse`≈opus, `flagship`≈fable. At
+Medium, `designer` moves up to `workhorse` and `coder` starts at `balanced`.
+Codex has no advisor equivalent, so the ladder is the only escalation path.
 
 At dispatch time, resolve the slot to a concrete model ID, then pass that ID
 with the table's `reasoning_effort`. Every dispatch must set both fields;

@@ -108,6 +108,20 @@ describe('content', () => {
     assert.doesNotMatch(md, /naming nit/);
   });
 
+  test('batches committed since the last reviewer pass are surfaced, and silence when none', () => {
+    const md = handoff({ phase: 'IMPLEMENT', batch_review: { every: 3, batches_since: 2, last_reviewed_sha: 'abc' } });
+    assert.match(md, /2 batch\(es\) committed since the last reviewer pass/);
+    assert.doesNotMatch(handoff({ phase: 'IMPLEMENT', batch_review: { every: 3, batches_since: 0 } }), /since the last reviewer pass/);
+  });
+
+  test('design rounds whose mechanical fixes were applied without a re-review are surfaced', () => {
+    const md = handoff({
+      phase: 'IMPLEMENT',
+      design: { reviews: [{ verdict: 'APPROVE' }, { verdict: 'REVISE', scope: 'mechanical_unreviewed', mechanical_applied: ['a', 'b'] }] },
+    });
+    assert.match(md, /1 design round\(s\) had mechanical fixes applied without a re-review/);
+  });
+
   test('handoff.stop_reason and notes are carried through', () => {
     const md = handoff({ phase: 'AWAITING_CI', handoff: { stop_reason: 'CI red: lint', notes: ['BATCH_COMPLETE 2 failed to post'] } });
     assert.match(md, /Stopped because: CI red: lint/);

@@ -9,6 +9,9 @@ const fs = require('fs');
 const path = require('path');
 const { PHASES } = require('./phases');
 
+// Phases after which batches are no longer in flight (the final review has covered them).
+const DONE_PHASES = new Set(['READY_FOR_PR', 'PR_OPENED', 'AUTO_REVIEW', 'AUTO_FIX', 'AWAITING_CI', 'MERGED', 'CLOSED', 'PUBLISHED']);
+
 const list = (v) => (Array.isArray(v) ? v.filter(Boolean) : []);
 const oneLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
 
@@ -87,6 +90,10 @@ function render(s, key, dir) {
   }
 
   const pending = [];
+  const unreviewed = s.batch_review && Number(s.batch_review.batches_since);
+  if (unreviewed > 0 && !DONE_PHASES.has(s.phase)) pending.push(`- ${unreviewed} batch(es) committed since the last reviewer pass (cumulative review due every ${s.batch_review.every ?? '?'}); the final review covers them`);
+  const unreviewedDesign = list(s.design && s.design.reviews).filter((r) => r && r.scope === 'mechanical_unreviewed').length;
+  if (unreviewedDesign > 0) pending.push(`- ${unreviewedDesign} design round(s) had mechanical fixes applied without a re-review — see \`design.reviews\` in the state file`);
   for (const t of batches) pending.push(`- Subtask ${t.id}${t.batch ? ` (batch ${t.batch})` : ''} ${t.status || 'PENDING'}: ${oneLine(t.title)}`);
   for (const f of openFindings)
     pending.push(`- Open ${f.severity} review finding: ${oneLine(f.title || f.summary || f.description || f.finding)}${f.file ? ` (${f.file}${f.line ? `:${f.line}` : ''})` : ''}`);

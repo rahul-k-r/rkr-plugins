@@ -137,4 +137,5 @@ Each story's `story-state.json` carries `batch: {id, lane, depends_on: [{key, ty
 
 - **Hooks apply per story, unchanged.** `gate-git.js` resolves a worktree's story state from the main checkout, so the push gate holds for lane worktrees; `validate-state.js` validates every story's state; each story's `handoff.md` renders as usual.
 - **Resume.** `--resume` reloads `batch-state.json`, reconciles each non-terminal story against its own `story-state.json` (and `gh pr view` for merged-ness), and continues. A story that was `RUNNING` when the session died is respawned with `--resume`, which keeps commits and drops the dirty tree.
+- **Advisor.** If a session advisor is configured, the orchestrator consults it only at an escalation decision, never routinely; story subagents apply `internal/model-effort/SKILL.md` for their own dispatches.
 - **What it won't do:** merge anything itself (only a story's own `--bypass` tail merges), post outside the `--comment` scope, create tickets, or `--bypass` onto `main` in a `sprint`-model repo.

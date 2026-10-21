@@ -96,15 +96,40 @@ describe('real-world note shapes', () => {
     assert.deepStrictEqual(checks(lint(note({ skip: [2] }))), ['sections']);
   });
 
+  test('§5 may be explicitly "None"/"N/A"; a §5 that is only table headers is hollow', () => {
+    assert.strictEqual(lint(note({ s5: 'None.' })).status, 0);
+    assert.strictEqual(lint(note({ s5: 'N/A — no obligations.' })).status, 0);
+    const headersOnly = '| Obligation | Owner | Ticket | Status | Notes on how this lands |\n|---|---|---|---|---|\n';
+    assert.deepStrictEqual(checks(lint(note({ s5: headersOnly }))), ['hollow-section']);
+  });
+
+  test('the foreign-context window is local: a distant ID does not excuse a bad reference', () => {
+    const far = 'ADR-0052 sets the rule. ' + 'x'.repeat(90) + ' See §3.7.\n';
+    assert.deepStrictEqual(checks(lint(note({ tail: far }), { adrs: [52] })), ['dangling-ref']);
+    assert.strictEqual(lint(note({ tail: 'Per ADR-0052 §3.7 the rule holds.\n' }), { adrs: [52] }).status, 0);
+  });
+
+  test('tokens like UTF-8 and SHA-256 are not mistaken for another document', () => {
+    assert.deepStrictEqual(checks(lint(note({ tail: 'Encoded as UTF-8, see §3.7.\n' }))), ['dangling-ref']);
+  });
+
+  test('two-digit section numbers are read whole (§10 is past §7, not §1)', () => {
+    const r = lint(note({ tail: 'See §10.\n' }));
+    assert.strictEqual(r.status, 0);
+    assert.deepStrictEqual(checks(r, 'warnings'), ['dangling-ref']);
+  });
+
   test('a section past §7 on an unqualified line is a warning, not an error', () => {
     const r = lint(note({ tail: 'See §9.\n' }));
     assert.strictEqual(r.status, 0);
     assert.deepStrictEqual(checks(r, 'warnings'), ['dangling-ref']);
   });
 
-  test('an ADR the note itself marks as proposed/pending is not required to exist yet', () => {
-    const r = lint(note({ tail: 'Adds ADR-0071 (proposed, scaffolded below).\nAlso a pending ADR-0072.\n' }));
-    assert.strictEqual(r.status, 0, JSON.stringify(r.errors));
+  test('calling an ADR "proposed" does not exempt it: the scaffold must exist on disk', () => {
+    const text = note({ tail: 'Adds ADR-0071 (proposed, scaffolded below).\nPer ADR-0099 (Accepted), the proposed TTL applies.\n' });
+    const r = lint(text);
+    assert.deepStrictEqual(checks(r), ['adr-ref', 'adr-ref']);
+    assert.strictEqual(lint(text, { adrs: [71, 99] }).status, 0);
   });
 
   test('ADR ids in Depends-on are not treated as story keys', () => {
@@ -159,6 +184,16 @@ describe('acceptance-criteria coverage', () => {
 
   test('label matching ignores spacing and case', () => {
     assert.strictEqual(lint(note({ tail: 'ac 1, AC-2, Ac3.\n' }), { ac: AC }).status, 0);
+  });
+
+  test('AC1 is not satisfied by AC10', () => {
+    const r = lint(note({ tail: 'Covers AC10 and AC2 and AC3.\n' }), { ac: AC });
+    assert.deepStrictEqual(checks(r), ['ac-coverage']);
+    assert.match(r.errors[0].message, /AC1\b/);
+  });
+
+  test('bare-number labels carry no information and are not checked', () => {
+    assert.strictEqual(lint(note(), { ac: '1. first\n2. second\n' }).status, 0);
   });
 
   test('without --ac-file the check is skipped', () => {

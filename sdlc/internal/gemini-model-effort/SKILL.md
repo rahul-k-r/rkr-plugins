@@ -26,9 +26,10 @@ Available model tier keys:
 
 | Agent | High (default) | Very Low | Low | Medium | Extra High |
 |---|---|---|---|---|---|
-| `coder` | `pro` | `flash` | `flash` | `pro` | `pro` |
+| `coder` | `pro` | `flash` | `flash` | `flash` | `pro` |
+| `coder (retry)` | `pro` | `flash` | `pro` | `pro` | `pro` |
 | `architect` | `pro` | `flash` | `flash` | `pro` | `pro` |
-| `designer` | `pro` | `flash` | `flash` | `flash` | `pro` |
+| `designer` | `pro` | `flash` | `flash` | `pro` | `pro` |
 | `panelist` | `pro` | `flash` | `flash` | `flash` | `pro` |
 | `verifier` | `pro` | `flash` | `flash` | `flash` | `pro` |
 | `moderator` | `pro` | `flash` | `flash` | `flash` | `pro` |
@@ -41,6 +42,16 @@ Available model tier keys:
 | `surveyor` | `flash` | `flash_lite` | `flash` | `flash` | `flash` |
 | `validator` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` |
 | `publisher` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` | `flash_lite` |
+
+**The retry ladder.** `coder (retry)` is not an agent: it is the `Model` for
+every retry of a batch, every final-review fix dispatch, and every `review-fix`
+coder dispatch (a resumed dispatch after a mid-batch death keeps the row of the
+attempt that died). At Low and Medium the first attempt starts on `flash` and
+escalates to `pro`; High and Extra High never escalate. This mirrors
+`internal/model-effort/SKILL.md` (`flash_lite`≈haiku, `flash`≈sonnet,
+`pro`≈opus). At Medium, `designer` moves up to `pro` and `coder` starts on
+`flash`. Antigravity exposes no per-dispatch thinking-effort parameter or
+advisor tool here, so only the model axis is tiered.
 
 Record the resolved effort in run state. On resume, read the saved value before
 repository configuration.

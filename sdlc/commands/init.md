@@ -43,7 +43,7 @@ argument-hint: "(no arguments)"
    ```
 
    Not asked here — advanced, opt-in fields a developer adds by hand later:
-   - `"reviewEvery": 3` and `"reviewPaths": ["**/migrations/**", ...]` — how `story-run` reviews
+   - `"reviewEvery": <n>` (default by tier: 1 at high/extra-high, 2 at medium, 3 at low/very-low) and `"reviewPaths": ["**/migrations/**", ...]` — how `story-run` reviews
      batches: the validator runs after every batch, the reviewer only when a batch touches a
      `reviewPaths` glob, the coder flags uncertainty, a retry happens, or `reviewEvery` batches have
      passed unreviewed (then one cumulative review). `reviewEvery: 1` reviews every batch. See

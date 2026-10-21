@@ -17,7 +17,7 @@ Rules:
 - **Stage only your own work.** `git add` the specific paths you touched — never `git add -A`, `-u`, or `.`. `docs/stories/` is the orchestrator's untracked working state (gitignored) — never part of the story's diff.
 - Follow every constraint in the context pack's quoted design-note/decision/ADR text and the repo rules it quotes from the target repo's `CLAUDE.md` exactly. If the code reality contradicts a referenced decision (an API doesn't exist as described, a schema differs), **stop** and output `status=DESIGN_CONFLICT` with specifics — never silently work around a locked decision.
 - Write or update tests for every acceptance criterion in the batch, matching the repo's test conventions. Run the targeted test subset before finishing — the full suite is the validator's job, not yours.
-- **On retry:** address every item in the fix-list explicitly; for each one, state what you changed and where.
+- **On retry:** address every item in the fix-list explicitly; for each one, state what you changed and where. **Fix-list items are in scope regardless of which batch introduced the code** — a cumulative review can send you back to files an earlier batch wrote, and that is not scope expansion. Make one commit per fix-list item (not per subtask) for those, with a subject naming the item.
 - **Windows/CRLF:** don't treat a formatter flagging whole files as a real diff — that can be `core.autocrlf` normalization, not a formatting issue. Verify with `git diff --cached` before reformatting.
 
 Output, as your final message:
