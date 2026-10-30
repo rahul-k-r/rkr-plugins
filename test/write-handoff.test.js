@@ -122,6 +122,18 @@ describe('content', () => {
     assert.match(md, /1 design round\(s\) had mechanical fixes applied without a re-review/);
   });
 
+  test('active lanes are listed with their worktree and batch; merged lanes are not', () => {
+    const md = handoff({
+      phase: 'IMPLEMENT',
+      lanes: {
+        be: { status: 'ACTIVE', worktree: '/w/abc-1-be', branch: 'feat/abc-1-x-be', fork_sha: 'abc', current_batch: 3 },
+        fe: { status: 'MERGED' },
+      },
+    });
+    assert.match(md, /Lane `be` \(batch 3\): `\/w\/abc-1-be`/);
+    assert.doesNotMatch(md, /Lane `fe`/);
+  });
+
   test('handoff.stop_reason and notes are carried through', () => {
     const md = handoff({ phase: 'AWAITING_CI', handoff: { stop_reason: 'CI red: lint', notes: ['BATCH_COMPLETE 2 failed to post'] } });
     assert.match(md, /Stopped because: CI red: lint/);

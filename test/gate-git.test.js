@@ -260,6 +260,24 @@ describe('story-phase push gate', () => {
     assert.strictEqual(statusOf(main, `git -C ${wt} push -u origin HEAD`), ALLOW);
   });
 
+  test('a lane branch is gated by its story\'s phase too', () => {
+    const LANE = `${BRANCH}-be`;
+    const r = repo({ branch: LANE });
+    const state = (phase) => ({ story_key: 'ABC-1', branch: BRANCH, phase, lanes: { be: { status: 'ACTIVE', worktree: '/w', branch: LANE, fork_sha: 'abc' } } });
+    writeStoryState(r, 'ABC-1', state('IMPLEMENT'));
+    const res = gate(r, 'git push -u origin HEAD');
+    assert.strictEqual(res.status, DENY);
+    assert.match(res.stderr, /ABC-1/);
+    writeStoryState(r, 'ABC-1', state('READY_FOR_PR'));
+    assert.strictEqual(statusOf(r, 'git push -u origin HEAD'), ALLOW);
+  });
+
+  test('a malformed lanes block does not crash the gate or block the push', () => {
+    const r = repo({ branch: BRANCH });
+    writeStoryState(r, 'ABC-1', { story_key: 'ABC-1', branch: 'feat/other', phase: 'IMPLEMENT', lanes: 'nope' });
+    assert.strictEqual(statusOf(r, 'git push -u origin HEAD'), ALLOW);
+  });
+
   test('an unparseable story-state does not block the push', () => {
     const r = repo({ branch: BRANCH });
     writeStoryState(r, 'ABC-1', '{ corrupt');

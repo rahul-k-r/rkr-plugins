@@ -82,6 +82,15 @@ Record the outcome in the state file so `--resume` and the hand-off can see it:
 
 Bootstrapping covers creation; the validator covers everything that still slips through — a `--worktree <path>` the developer never set up, a stack auto-detection doesn't know, a lockfile added mid-story. `validator` classifies a step whose failure is environment-shaped (a module/package/import not found, a missing interpreter or venv, a tool absent from `PATH` inside the worktree, a bundler or build tool unable to locate its workspace or project root) as `FAIL_ENV` rather than `FAIL`, and the orchestrator treats `FAIL_ENV` as an **ESCALATE**, never a coder RETRY — the coder can't install dependencies by editing source, and every retry spent on it burns budget while the real cause stays hidden. The escalation names the step, the excerpt, and the likely fix (re-run the bootstrap for that directory, or add a `worktreeSetup` entry).
 
+## Lane worktrees (parallel batches inside one story)
+
+`story-run`'s lane sections (Step 5) fork one extra worktree per concurrent lane. They are created by that procedure, not by the resolution above, and follow the same rules: plain `git worktree add`, never `EnterWorktree`, reached only through `-C`/`cd`-qualified commands, with the working root stated explicitly in every dispatch. `docs/stories/<KEY>/` still resolves to the orchestrating session's own root — lane agents never write it.
+
+- **Naming.** `.claude/worktrees/<key-lower>-<lane>` on branch `<story branch>-<lane>`, cut with `git worktree add -b` from the section's fork sha (the story branch's HEAD when the section began).
+- **Partial bootstrap.** Run only the setup entries a lane needs: an entry whose `dir` contains, or is contained by, one of the lane's `files` paths runs; root entries (`dir: "."`) and `.gitmodules` always do. A backend-only lane skips `frontend`'s `npm ci`, which is the slow, disk-heavy step. If the lane's `files` don't pin it down (root-level globs), run the whole list. Under the heavy-work lock, like any bootstrap. A lane resumed into an existing worktree is never re-bootstrapped.
+- **A skipped entry the lane turns out to need** surfaces as `FAIL_ENV` and is an ESCALATE as above; the fix is running that entry for that directory in the lane worktree.
+- **Lifetime.** Removed right after the lane merges into the story branch (`git worktree remove --force`, then `git branch -d`). Anything left by an escalation, pause or dead session is swept when the story reaches FINAL_REVIEW, so no lane worktree outlives the implement phase.
+
 ## What targets the worktree vs. what stays at the session's root
 
 - **Git operations** — branch checkout/creation, commits, diffs, `gh pr create` — target `worktree` via `-C`/`cd`-prefixed commands whenever it's non-null. Never via a session-level directory change.

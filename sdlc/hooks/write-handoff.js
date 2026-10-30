@@ -66,6 +66,9 @@ function render(s, key, dir) {
   const where = [
     s.branch && `- Branch: \`${s.branch}\`` + (s.base_branch ? ` → \`${s.base_branch}\`` : ''),
     s.worktree && `- Worktree: \`${s.worktree}\``,
+    ...Object.entries(s.lanes || {})
+      .filter(([, l]) => l && l.status === 'ACTIVE')
+      .map(([name, l]) => `- Lane \`${name}\` (batch ${l.current_batch ?? '?'}): \`${l.worktree}\` on \`${l.branch}\``),
     s.pr && s.pr.url && `- PR: ${s.pr.url}`,
     `- Mode: ${s.write_mode || 'normal'}${s.bypass ? ', --bypass' : ''}${s.turbo ? ', --turbo' : ''}`,
     s.handoff && s.handoff.stop_reason && `- Stopped because: ${oneLine(s.handoff.stop_reason)}`,

@@ -194,7 +194,9 @@ process.stdin.on('end', () => {
         const p = path.join(r, 'docs', 'stories', key, 'story-state.json');
         try {
           const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-          if (s && s.branch === branch) {
+          // A lane branch (<story branch>-<lane>) belongs to its story: gate it by the same phase.
+          const laneBranches = s && s.lanes && typeof s.lanes === 'object' ? Object.values(s.lanes).map((l) => l && l.branch) : [];
+          if (s && (s.branch === branch || laneBranches.includes(branch))) {
             state = s;
             break;
           }

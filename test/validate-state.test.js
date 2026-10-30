@@ -112,6 +112,144 @@ describe('phase legality', () => {
   });
 });
 
+// A lane section is a run of consecutive lane-tagged batches: they execute
+// concurrently in separate worktrees, so their file sets must not overlap.
+describe('lane plans', () => {
+  const st = (id, batch, lane, files) => ({ id, batch, lane, files, status: 'PENDING' });
+  const planned = (...subtasks) => check({ ...valid, plan: { subtasks } });
+
+  test('a plan with no lanes is unaffected', () => {
+    assert.strictEqual(planned({ id: 'ST-1', batch: 1 }, { id: 'ST-2', batch: 2 }).status, OK);
+  });
+
+  test('two lanes with disjoint files pass', () => {
+    const r = planned(
+      st('ST-1', 1, null, ['shared/types.ts']),
+      st('ST-2', 2, 'be', ['backend/app/']),
+      st('ST-3', 3, 'fe', ['frontend/src/**']),
+      st('ST-4', 4, null, ['docs/'])
+    );
+    assert.strictEqual(r.status, OK);
+  });
+
+  test('overlapping directory vs file between lanes is rejected', () => {
+    const r = planned(st('ST-2', 2, 'be', ['backend/app/']), st('ST-3', 3, 'fe', ['backend/app/views.py']));
+    assert.strictEqual(r.status, INVALID);
+    assert.match(r.stderr, /lanes "be" and "fe".*overlap/);
+  });
+
+  test('a glob that can match the other lane\'s file is rejected', () => {
+    const r = planned(st('ST-2', 2, 'be', ['frontend/src/**']), st('ST-3', 3, 'fe', ['frontend/src/a.ts']));
+    assert.strictEqual(r.status, INVALID);
+    assert.match(r.stderr, /overlap/);
+  });
+
+  test('the same file in two lanes is rejected', () => {
+    const r = planned(st('ST-2', 2, 'a', ['x.ts']), st('ST-3', 3, 'b', ['x.ts']));
+    assert.strictEqual(r.status, INVALID);
+    assert.match(r.stderr, /overlap/);
+  });
+
+  test('paths are compared after normalisation: case, ./, leading /, backslashes', () => {
+    for (const [a, b] of [
+      ['Backend/a.py', 'backend/a.py'],
+      ['a/./b.ts', 'a/b.ts'],
+      ['/a/b.ts', 'a/b.ts'],
+      ['a\\b.ts', 'a/b.ts'],
+      ['./a/', 'a/c.ts'],
+    ]) {
+      const r = planned(st('ST-2', 2, 'x', [a]), st('ST-3', 3, 'y', [b]));
+      assert.strictEqual(r.status, INVALID, `${a} vs ${b}`);
+    }
+  });
+
+  test('globs are compared on directory boundaries, not raw string prefixes', () => {
+    assert.strictEqual(planned(st('ST-2', 2, 'a', ['backend']), st('ST-3', 3, 'b', ['backend-tools/*.ts'])).status, OK);
+    assert.strictEqual(planned(st('ST-2', 2, 'a', ['src/api/']), st('ST-3', 3, 'b', ['src/apix/**'])).status, OK);
+    assert.strictEqual(planned(st('ST-2', 2, 'a', ['src/']), st('ST-3', 3, 'b', ['src/api/**'])).status, INVALID);
+  });
+
+  test('a leading wildcard overlaps everything and says so', () => {
+    const r = planned(st('ST-2', 2, 'a', ['**/*.ts']), st('ST-3', 3, 'b', ['docs/x.md']));
+    assert.strictEqual(r.status, INVALID);
+    assert.match(r.stderr, /overlap/);
+  });
+
+  test('square brackets are literal path characters (Next.js / SvelteKit routes), not globs', () => {
+    const r = planned(st('ST-2', 2, 'a', ['app/[id]/page.tsx']), st('ST-3', 3, 'b', ['app/other/page.tsx']));
+    assert.strictEqual(r.status, OK);
+    assert.strictEqual(planned(st('ST-2', 2, 'a', ['app/[id]/page.tsx']), st('ST-3', 3, 'b', ['app/[id]/']))
+      .status, INVALID);
+  });
+
+  test('batches are ordered numerically: 10 follows 2, not 1', () => {
+    const r = planned(st('ST-2', 2, 'a', ['x/']), { id: 'ST-3', batch: 3 }, st('ST-4', 10, 'b', ['x/']));
+    assert.strictEqual(r.status, OK, 'lanes in different sections may overlap');
+    const sameSection = planned(st('ST-2', 2, 'a', ['x/']), st('ST-4', 10, 'b', ['x/']), { id: 'ST-5', batch: 11 });
+    assert.strictEqual(sameSection.status, INVALID, 'a plain string sort would put 10 before 2 and split them');
+  });
+
+  test('a malformed plan is reported, never a hook crash (exit 1 would silently skip validation)', () => {
+    for (const subtasks of [[null], ['x'], [42]]) {
+      const r = check({ ...valid, plan: { subtasks } });
+      assert.strictEqual(r.status, INVALID, JSON.stringify(subtasks));
+      assert.match(r.stderr, /non-object/);
+    }
+    for (const lane of [{}, 3, ['a']]) {
+      const r = planned({ id: 'ST-1', batch: 1, lane, files: ['a/'] });
+      assert.strictEqual(r.status, INVALID, JSON.stringify(lane));
+      assert.match(r.stderr, /lane must be a string/);
+    }
+  });
+
+  test('a lane subtask needs an integer batch; "2" and 2 are the same batch', () => {
+    assert.strictEqual(planned({ id: 'ST-1', lane: 'a', files: ['a/'] }).status, INVALID);
+    assert.strictEqual(planned(st('ST-1', '1b', 'a', ['a/'])).status, INVALID);
+    const r = planned(st('ST-2', '2', 'a', ['a/']), st('ST-3', 2, 'b', ['b/']));
+    assert.strictEqual(r.status, INVALID);
+    assert.match(r.stderr, /batch 2 mixes lanes/);
+  });
+
+  test('a lane may overlap itself across its own batches', () => {
+    const r = planned(st('ST-2', 2, 'be', ['backend/']), st('ST-3', 3, 'be', ['backend/app/']), st('ST-4', 4, 'fe', ['frontend/']));
+    assert.strictEqual(r.status, OK);
+  });
+
+  test('lanes in different sections (split by an untagged batch) may overlap', () => {
+    const r = planned(st('ST-2', 2, 'a', ['x/']), { id: 'ST-3', batch: 3 }, st('ST-4', 4, 'b', ['x/']));
+    assert.strictEqual(r.status, OK);
+  });
+
+  test('a lane subtask must list its files', () => {
+    for (const files of [undefined, [], ['']]) {
+      const r = planned(st('ST-2', 2, 'be', files));
+      assert.strictEqual(r.status, INVALID, JSON.stringify(files));
+      assert.match(r.stderr, /ST-2.*lane "be".*no files/);
+    }
+  });
+
+  test('one batch cannot span two lanes', () => {
+    const r = planned(st('ST-2', 2, 'be', ['a/']), st('ST-3', 2, 'fe', ['b/']));
+    assert.strictEqual(r.status, INVALID);
+    assert.match(r.stderr, /batch 2 mixes lanes/);
+  });
+
+  describe('lane records', () => {
+    const withLanes = (lanes) => check({ ...valid, lanes });
+
+    test('an ACTIVE lane needs its worktree, branch and fork sha', () => {
+      assert.strictEqual(withLanes({ be: { status: 'ACTIVE' } }).status, INVALID);
+      assert.strictEqual(withLanes({ be: { status: 'ACTIVE', worktree: '/w', branch: 'b-be', fork_sha: 'abc' } }).status, OK);
+    });
+
+    test('a MERGED or ABANDONED lane needs nothing more; an unknown status is rejected', () => {
+      assert.strictEqual(withLanes({ be: { status: 'MERGED' } }).status, OK);
+      assert.strictEqual(withLanes({ be: { status: 'ABANDONED' } }).status, OK);
+      assert.strictEqual(withLanes({ be: { status: 'DONE?' } }).status, INVALID);
+    });
+  });
+});
+
 describe('revision budgets', () => {
   const budgeted = (budgets) => check({ ...valid, budgets });
 
