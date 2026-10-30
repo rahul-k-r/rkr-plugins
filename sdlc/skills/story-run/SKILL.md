@@ -16,5 +16,7 @@ Runs the full story lifecycle autonomously: design note (if none exists), story 
 > - Pass the verbatim persona from `agents/<name>.md` plus task context. Ignore `EnterWorktree`; manage worktrees with git.
 > **Telemetry & Stats**: Collect `dispatches[]` into `story-state.json`. If `--show-stats` is passed, render `internal/run-stats/template.html` and write it to the host's available local artifact/report location.
 
+> **Lanes are Claude Code only.** They need `run_in_background` dispatch and `validate-state.js`, which Codex and Antigravity lack: treat `lanes_cap` as 1 and run every batch sequentially, ignoring `lane`/`files` on subtasks.
+
 Read `commands/story-run.md` (in the plugin directory) in full and follow its steps.
 Pass through `$ARGUMENTS` (e.g. `[<KEY>] [--base <branch>] [--worktree <path> | --no-worktree] [--effort <tier>] [--bypass] [--plain]`).
